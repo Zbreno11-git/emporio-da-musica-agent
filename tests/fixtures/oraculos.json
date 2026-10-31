@@ -1,0 +1,112 @@
+{
+  "description": "Valores de referência do snapshot. Valores PIX/offer de itens indisponíveis são aritmética interna e não autorizam oferta.",
+  "counts": {
+    "customers": 50,
+    "products": 65,
+    "categories": 9,
+    "order_items": 22,
+    "promotions": 25,
+    "orders": 20
+  },
+  "sellable_count": 61,
+  "products": [
+    {
+      "product_id": 81,
+      "base_cents": 59990,
+      "promotion_percent": 0,
+      "offer_cents": 59990,
+      "pix_cents": 56991,
+      "saleable": true
+    },
+    {
+      "product_id": 90,
+      "base_cents": 239900,
+      "promotion_percent": 18,
+      "offer_cents": 196718,
+      "pix_cents": 196718,
+      "saleable": true
+    },
+    {
+      "product_id": 94,
+      "base_cents": 599900,
+      "promotion_percent": 8,
+      "offer_cents": 551908,
+      "pix_cents": 551908,
+      "saleable": true
+    },
+    {
+      "product_id": 95,
+      "base_cents": 219900,
+      "promotion_percent": 0,
+      "offer_cents": 219900,
+      "pix_cents": 208905,
+      "saleable": true
+    },
+    {
+      "product_id": 96,
+      "base_cents": 79990,
+      "promotion_percent": 0,
+      "offer_cents": 79990,
+      "pix_cents": 75991,
+      "saleable": false
+    },
+    {
+      "product_id": 121,
+      "base_cents": 54900,
+      "promotion_percent": 20,
+      "offer_cents": 43920,
+      "pix_cents": 43920,
+      "saleable": true
+    },
+    {
+      "product_id": 127,
+      "base_cents": 35900,
+      "promotion_percent": 10,
+      "offer_cents": 32310,
+      "pix_cents": 32310,
+      "saleable": true
+    },
+    {
+      "product_id": 130,
+      "base_cents": 174900,
+      "promotion_percent": 0,
+      "offer_cents": 174900,
+      "pix_cents": 166155,
+      "saleable": false
+    },
+    {
+      "product_id": 136,
+      "base_cents": 44100,
+      "promotion_percent": 0,
+      "offer_cents": 44100,
+      "pix_cents": 41895,
+      "saleable": false
+    }
+  ],
+  "orders": [
+    {
+      "order_id": 8,
+      "customer_id": 2,
+      "status": "shipped",
+      "total_cents": 34990,
+      "estimated_delivery": "2026-02-28",
+      "has_tracking": true
+    },
+    {
+      "order_id": 9,
+      "customer_id": 6,
+      "status": "confirmed",
+      "total_cents": 34990,
+      "estimated_delivery": null,
+      "has_tracking": false
+    },
+    {
+      "order_id": 20,
+      "customer_id": 7,
+      "status": "cancelled",
+      "total_cents": 140000,
+      "estimated_delivery": null,
+      "has_tracking": false
+    }
+  ]
+}
