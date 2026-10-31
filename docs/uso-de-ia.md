@@ -7,7 +7,7 @@
 | Ferramenta | Papel |
 | --- | --- |
 | Claude Code (Opus) | Implementação, auditoria dos insumos, testes e documentação, guiado por skills de processo e de técnica |
-| ChatGPT | *A preencher por Breno: uso na pesquisa e na redação dos guias de visão, backend e branding* |
+| ChatGPT | Brainstorming e definição das specs antes da implementação (guias de visão, backend e branding) |
 | GPT Images | Prancha da marca Ressonância e miniatura universal do catálogo (registrado no guia de branding) |
 
 ## Registro por sessão
