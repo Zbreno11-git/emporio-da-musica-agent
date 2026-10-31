@@ -1,0 +1,91 @@
+[
+  {
+    "scenario": "Cotação com promoção e PIX",
+    "request": {
+      "request_id": "00000000-0000-4000-8000-000000000001",
+      "message": "Quanto fica o Kalani KAL-700T no PIX?"
+    },
+    "response": {
+      "request_id": "00000000-0000-4000-8000-000000000001",
+      "text": "Ele sai por R$ 323,10. O preço de tabela é R$ 359,00 e a promoção de 10% já está aplicada. O PIX mantém esse valor.",
+      "cards": [
+        {
+          "product_id": 127,
+          "name": "Kalani KAL-700T Tenor Natural",
+          "attribute": "Ukulele tenor",
+          "availability": "available",
+          "base_cents": 35900,
+          "offer_cents": 32310,
+          "discount_percent": 10,
+          "payment_cents": 32310,
+          "payment_method": "pix"
+        }
+      ],
+      "sources": [
+        {
+          "type": "catalog",
+          "id": "product:127",
+          "label": "Catálogo da loja"
+        },
+        {
+          "type": "policy",
+          "id": "6.2",
+          "label": "Manual da loja, seção 6.2",
+          "page_start": 6,
+          "page_end": 6
+        }
+      ],
+      "next_action": "none"
+    }
+  },
+  {
+    "scenario": "Pedido como visitante",
+    "request": {
+      "request_id": "00000000-0000-4000-8000-000000000002",
+      "message": "Onde está o meu pedido 8?"
+    },
+    "response": {
+      "request_id": "00000000-0000-4000-8000-000000000002",
+      "text": "Escolhe um perfil de demonstração para eu consultar o pedido associado a ele.",
+      "cards": [],
+      "sources": [],
+      "next_action": "choose_profile"
+    }
+  },
+  {
+    "scenario": "Lacuna no manual",
+    "request": {
+      "request_id": "00000000-0000-4000-8000-000000000003",
+      "message": "Quanto custa o frete de um pedido de exatamente R$ 500 na região metropolitana de Campo Grande?"
+    },
+    "response": {
+      "request_id": "00000000-0000-4000-8000-000000000003",
+      "text": "O manual informa R$ 35 abaixo de R$ 500 e frete grátis acima desse valor. Para exatamente R$ 500, a equipe precisa confirmar a tarifa.",
+      "cards": [],
+      "sources": [
+        {
+          "type": "policy",
+          "id": "5.1",
+          "label": "Manual da loja, seção 5.1",
+          "page_start": 4,
+          "page_end": 4
+        },
+        {
+          "type": "policy",
+          "id": "7",
+          "label": "Manual da loja, seção 7",
+          "page_start": 6,
+          "page_end": 6
+        }
+      ],
+      "next_action": "contact_store",
+      "handoff": {
+        "reason": "policy_gap",
+        "summary": "Confirmar tarifa metropolitana para um pedido de exatamente R$ 500.",
+        "channel_label": "WhatsApp de atendimento indicado no manual",
+        "destination": "(67) 3321-4500",
+        "delivery_status": "prepared"
+      }
+    }
+  }
+]

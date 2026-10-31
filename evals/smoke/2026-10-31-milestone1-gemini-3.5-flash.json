@@ -1,0 +1,89 @@
+{
+  "model": "gemini-3.5-flash",
+  "google_genai": "2.34.0",
+  "turns": [
+    {
+      "message": "Quanto custa o Takamine GD20?",
+      "status": 200,
+      "ok": true,
+      "seconds": 9.62,
+      "text": "O Takamine GD20 Dreadnought está por R$ 2.199,00. Ele vem com tampo sólido em cedro, o que garante um timbre bem quente e definido para os teus estudos e apresentações.",
+      "card": {
+        "product_id": 95,
+        "name": "Takamine GD20 Dreadnought Natural",
+        "attribute": "Cordas de aço",
+        "availability": "available",
+        "base_cents": 219900,
+        "offer_cents": 219900,
+        "discount_percent": 0,
+        "payment_cents": 219900,
+        "payment_method": "table"
+      },
+      "tools": [
+        [
+          "query_catalog",
+          {
+            "params": [
+              "%takamine%gd20%"
+            ],
+            "intent": "lookup",
+            "sql": "SELECT product_id FROM products WHERE name_search LIKE ?"
+          }
+        ],
+        [
+          "quote_product",
+          {
+            "method": "table",
+            "product_id": 95
+          }
+        ]
+      ],
+      "usage": {
+        "input": 6117,
+        "output": 120,
+        "thoughts": 1044,
+        "total": 7281
+      },
+      "model_calls": 3,
+      "text_corrected": false,
+      "text_fallback": false
+    },
+    {
+      "message": "e no PIX?",
+      "status": 200,
+      "ok": true,
+      "seconds": 3.85,
+      "text": "No PIX, ele sai por R$ 2.089,05. Se quiser, também posso consultar as condições de parcelamento no cartão para ti!",
+      "card": {
+        "product_id": 95,
+        "name": "Takamine GD20 Dreadnought Natural",
+        "attribute": "Cordas de aço",
+        "availability": "available",
+        "base_cents": 219900,
+        "offer_cents": 219900,
+        "discount_percent": 0,
+        "payment_cents": 208905,
+        "payment_method": "pix"
+      },
+      "tools": [
+        [
+          "quote_product",
+          {
+            "product_id": 95,
+            "method": "pix"
+          }
+        ]
+      ],
+      "usage": {
+        "input": 6393,
+        "output": 58,
+        "thoughts": 329,
+        "total": 6780
+      },
+      "model_calls": 2,
+      "text_corrected": false,
+      "text_fallback": false
+    }
+  ],
+  "passed": true
+}

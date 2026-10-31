@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empório da Música · Atendimento</title>
+<!-- Minimal page for milestone 1. The Ressonância interface replaces it in session S6. -->
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #faf6ec; color: #242825; }
+  main { max-width: 46rem; margin: 0 auto; padding: 1rem; }
+  .turn { margin: .75rem 0; } .user { text-align: right; }
+  .card { border: 1px solid #d4cfc2; border-radius: .75rem; padding: .5rem .75rem; margin: .25rem 0; background: #fffdf8; }
+  .price { color: #984b2c; font-weight: 700; }
+  form { display: flex; gap: .5rem; } input { flex: 1; padding: .6rem; } button { background: #173d33; color: #faf6ec; border: 0; padding: 0 1rem; border-radius: .5rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Empório da Música</h1>
+  <div id="log" aria-live="polite"></div>
+  <form id="f"><input id="m" autocomplete="off" placeholder="Escreva sua mensagem..." required maxlength="2000"><button>Enviar</button></form>
+</main>
+<script>
+const brl = c => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const log = document.getElementById("log");
+const esc = s => s.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+async function ensureSession() { await fetch("/api/session", { method: "POST" }); }
+document.getElementById("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = document.getElementById("m"), message = input.value.trim();
+  if (!message) return;
+  log.insertAdjacentHTML("beforeend", `<div class="turn user">${esc(message)}</div>`);
+  input.value = "";
+  const send = () => fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ request_id: crypto.randomUUID(), message }) });
+  let r = await send();
+  if (r.status === 410) { await ensureSession(); r = await send(); }
+  const data = await r.json();
+  if (!r.ok) { log.insertAdjacentHTML("beforeend", `<div class="turn">${esc(data.message)}</div>`); return; }
+  const cards = data.cards.map(c => `<div class="card"><strong>${esc(c.name)}</strong> · ${esc(c.attribute)}<br>
+    <span class="price">${brl(c.payment_cents ?? c.offer_cents)}</span> ${c.payment_method === "pix" ? "no PIX" : ""}
+    · ${c.availability === "available" ? "Disponível" : "Indisponível"}</div>`).join("");
+  log.insertAdjacentHTML("beforeend", `<div class="turn">${esc(data.text)}${cards}</div>`);
+});
+ensureSession();
+</script>
+</body>
+</html>

@@ -14,6 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 Q, I, C = "app/tools/quote.py", "scripts/import_snapshot.py", "app/tools/catalog.py"
 TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py", "tests/tools/test_catalog_sql.py"
+A, M, S = "app/agent.py", "app/main.py", "app/session.py"
+TH = "tests/http/test_chat_api.py"
 
 MUTATIONS = [
     # (file, original snippet, defect, test that must fail)
@@ -48,6 +50,21 @@ MUTATIONS = [
     (C, '            within = [p for p in products if (p["pix_cents"] if on_pix else p["offer_cents"]) <= cap]',
      "            within = list(products)",
      f"{TC}::test_discover_drops_unavailable_and_over_budget_even_if_sql_forgets"),
+    (A, "    problems += [f\"claims an action that was not executed: '{m.group(0)}'\" for m in _CLAIM_RE.finditer(text)]",
+     "    pass", f"{TH}::test_claimed_action_is_rejected"),
+    (A, '    problems = [f"amount {brl(v)} has no evidence" for v in money_mentions(text) if v not in cents]',
+     "    problems = []", f"{TH}::test_wrong_price_in_text_is_corrected_then_falls_back"),
+    (A, "    if args.product_id not in state.known_products:", "    if False:",
+     f"{TH}::test_wrong_price_in_text_is_corrected_then_falls_back"),
+    (M, "                history=session.history(settings.history_turns),", "                history=[],",
+     f"{TH}::test_takamine_then_pix_keeps_product_in_context"),
+    (M, '            if cached.status == "done":\n                return cached.response',
+     '            if False:\n                return cached.response', f"{TH}::test_same_request_id_returns_same_answer_without_new_model_call"),
+    (M, "        if not session.lock.acquire(blocking=False):", "        if not session.lock.acquire(blocking=True):",
+     f"{TH}::test_concurrent_turn_in_same_session_is_409"),
+    (M, "            except ProviderUnavailable:\n                session.requests.pop(rid, None)",
+     "            except ProviderUnavailable:\n                pass", f"{TH}::test_provider_failures_are_public_errors_and_release_the_request_id"),
+    (S, "        if len(self.recent_turns) >= per_minute:", "        if False:", f"{TH}::test_rate_limit_is_429"),
 ]
 
 

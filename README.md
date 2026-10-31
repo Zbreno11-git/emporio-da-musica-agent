@@ -8,13 +8,15 @@ The agent answers questions about the catalog, prices, payment methods, orders a
 
 ## Status (2026-10-31)
 
-**Work in progress.** Data import, deterministic pricing and the restricted catalog SQL executor are done and tested. The LLM agent loop is next.
+**Work in progress.** Milestone 1 works with real Gemini: the Takamine GD20 price (R$ 2.199,00) and the follow-up "e no PIX?" (R$ 2.089,05) in the same session ([evidence](evals/milestone1-smoke.md)).
 
 | Done | Next |
 | --- | --- |
-| Snapshot importer (CSV → SQLite) with validation and a manifest | Gemini function-calling loop: Takamine GD20 price (R$ 2.199,00) → "e no PIX?" (R$ 2.089,05) |
-| Price, PIX and installment rules in integer cents, tested against reference values | Orders bound to the server session, policy retrieval by manual section |
-| Read-only catalog SQL executor with a deny-by-default authorizer | Ressonância web UI, Cloud Run deploy, real captured conversations |
+| Snapshot importer (CSV → SQLite) with validation and a manifest | Orders bound to the server session |
+| Price, PIX and installment rules in integer cents, tested against reference values | Policy retrieval by manual section, hand-off to the staff |
+| Read-only catalog SQL executor with a deny-by-default authorizer | Cloud Run deploy, model benchmark |
+| Gemini function-calling loop with per-turn budget and server-side checks of prices and claimed actions | Ressonância web UI, real captured conversations |
+| FastAPI session, dedup, rate limit and public errors | |
 
 The roadmap is in [`docs/SESSIONS.md`](docs/SESSIONS.md) and the current state in [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
@@ -48,16 +50,27 @@ EMPORIO_SNAPSHOT="path/to/the/zip" .venv/bin/python -m pytest
 .venv/bin/python scripts/mutation_check.py     # curated mutations that the tests must catch
 ```
 
-The commands to run the web app are added together with the first chat endpoint.
+Run the app locally (needs `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env`):
+
+```bash
+.venv/bin/uvicorn app.main:get_app --factory --port 8000    # then open http://localhost:8000
+.venv/bin/python scripts/smoke_gemini.py --model gemini-3.1-flash-lite   # milestone-1 check with the real API
+```
 
 ## Repository layout
 
 The planned code layout is in [`docs/architecture.md`](docs/architecture.md#planned-tree).
 
 ```text
+app/main.py               FastAPI routes, session cookie, public errors
+app/agent.py              Gemini tool loop, per-turn budget, response composition and text checks
+app/prompts.py            store persona (instructions in English, replies in Brazilian Portuguese)
+app/session.py            in-memory sessions, dedup, rate limit
 app/tools/quote.py        price, promotion, PIX and installments (cents)
 app/tools/catalog.py      restricted SQL executor + product hydration
 app/contracts.py          HTTP request/response models
+scripts/smoke_gemini.py   milestone-1 check against the real API
+evals/                    smoke and benchmark evidence
 scripts/import_snapshot.py  CSV -> SQLite with validation and manifest
 scripts/check_staged.py   pre-commit scan for secrets, personal data and manual excerpts
 scripts/mutation_check.py curated mutation net

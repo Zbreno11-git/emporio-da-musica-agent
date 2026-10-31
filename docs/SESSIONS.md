@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 3 of 11 sessions closed** (S0, S0b, S1). S-EN is in progress; S2–S8 are next.
+**Progress: 5 of 11 sessions closed** (S0, S0b, S1, S-EN, S2). S3–S8 are next.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -67,13 +67,14 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
 - [x] 1.4 SQL executor: violations blocked, nylon up to R$ 800 → 83, 85, 81, 84 — commit `6059b51`
 - [x] Mutation net: 15/15 caught (`scripts/mutation_check.py`)
 
-## 🔵 S-EN · Translate the repository to English (≈1 h) [OFF]
-- [ ] Code, comments, messages, tests, docs and file names in English; private folder renamed to `_private_inputs/`
+## ✅ S-EN · Translate the repository to English (2026-10-31) [OFF]
+- [x] Code, comments, messages, tests, docs and file names in English; private folder renamed to `_private_inputs/`
 - **✅ C-EN:** `pytest` green, 15/15 mutations, `check_staged.py` PASS, no Portuguese outside customer-facing strings and data.
 
 ## Day 1 · 2026-11-01
 
-### S2 · First turn with real Gemini (≈2 h) [GEM]
+### ✅ S2 · First turn with real Gemini (done 2026-10-31, ahead of schedule) [GEM]
+- [x] Agent loop, session, API, minimal page; 76 tests, 23/23 mutations; milestone 1 passes with both candidates ([evidence](../evals/milestone1-smoke.md))
 - **2.1** `app/contracts.py` (done in draft); the contract examples validate.
 - **2.2 Agent loop.**
   - **Does:** `app/agent.py` with `generate_content`, manual dispatch, model content parts preserved (thought signatures), a budget of 3 rounds, 6 tools and 25 s, and cards hydrated by the backend; the system prompt and customer replies are in PT-BR.
