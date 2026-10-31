@@ -1,18 +1,18 @@
 {
   "meta": {
     "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
-    "revision": "emporio-agent-00010-x5j",
-    "commit": "69f4b68",
+    "revision": "emporio-agent-00011-z2g",
+    "commit": "ec6f6d6",
     "model": "gemini-3.1-flash-lite",
     "dataset_id": "1412d32a6eeb",
     "screenshot": "screens/02-promotion-pix-390.png",
-    "captured": "2026-10-31 19:01"
+    "captured": "2026-10-31 20:16"
   },
   "turns": [
     {
       "message": "Quanto fica o Kalani KAL-700T no PIX?",
-      "request_id": "59a4cad4-f179-46b2-8e55-fe259781ac64",
-      "text": "O Kalani KAL-700T Tenor Natural está com um preço especial de R$ 323,10 no PIX, aproveitando o desconto de 10% sobre o valor original de R$ 359,00. Esse modelo é um ukulele tenor com corpo em Sapele e tampo em Spruce, sendo uma ótima escolha para quem prefere um instrumento um pouco maior.",
+      "request_id": "8d01d582-95e3-476f-8e87-deb886ac3f53",
+      "text": "O Kalani KAL-700T Tenor Natural está com um desconto de 10%, saindo de R$ 359,00 por R$ 323,10. Como temos uma promoção ativa, esse é o valor final para o pagamento via PIX.",
       "cards": [
         {
           "product_id": 127,
@@ -50,19 +50,10 @@
       "next_action": "none",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 3841,
-        "model_calls": 4,
-        "tool_rounds": 3,
+        "duration_ms": 2766,
+        "model_calls": 3,
+        "tool_rounds": 2,
         "tools": [
-          {
-            "name": "query_catalog",
-            "args": {
-              "sql": "SELECT product_id FROM products WHERE name = 'Kalani KAL-700T'",
-              "intent": "lookup"
-            },
-            "ok": true,
-            "ms": 1
-          },
           {
             "name": "query_catalog",
             "args": {
@@ -83,17 +74,17 @@
           }
         ],
         "usage": {
-          "input": 13579,
-          "output": 193,
+          "input": 9893,
+          "output": 128,
           "thoughts": 0,
-          "total": 13772
+          "total": 10021
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 4.14,
-      "seconds": 4.14
+      "_seconds": 3.07,
+      "seconds": 3.07
     }
   ],
   "checks": [

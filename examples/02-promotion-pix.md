@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | URL | https://emporio-agent-669786539213.southamerica-east1.run.app |
-| Revision / commit | `emporio-agent-00010-x5j` / `69f4b68` |
+| Revision / commit | `emporio-agent-00011-z2g` / `ec6f6d6` |
 | Model | `gemini-3.1-flash-lite` |
 | Dataset | `1412d32a6eeb` |
-| Captured | 2026-10-31 19:01 (São Paulo) |
+| Captured | 2026-10-31 20:16 (São Paulo) |
 | Screenshot | [02-promotion-pix-390.png](screens/02-promotion-pix-390.png) |
 
 ## Conversation
@@ -16,13 +16,13 @@
 **Turn 1 · Customer:** Quanto fica o Kalani KAL-700T no PIX?
 <br>*EN:* How much is the Kalani KAL-700T with PIX?
 
-**Turn 1 · Empório:** O Kalani KAL-700T Tenor Natural está com um preço especial de R$ 323,10 no PIX, aproveitando o desconto de 10% sobre o valor original de R$ 359,00. Esse modelo é um ukulele tenor com corpo em Sapele e tampo em Spruce, sendo uma ótima escolha para quem prefere um instrumento um pouco maior.
-<br>*EN:* The Kalani KAL-700T Tenor Natural has a special price of R$ 323,10 with PIX, the 10% discount on the original R$ 359,00. It is a tenor ukulele with a sapele body and a spruce top, a great choice for someone who prefers a slightly larger instrument.
+**Turn 1 · Empório:** O Kalani KAL-700T Tenor Natural está com um desconto de 10%, saindo de R$ 359,00 por R$ 323,10. Como temos uma promoção ativa, esse é o valor final para o pagamento via PIX.
+<br>*EN:* The Kalani KAL-700T Tenor Natural has a 10% discount, from R$ 359,00 down to R$ 323,10. Since there is an active promotion, that is the final price for PIX payment.
 
 Cards shown:
 - `#127` Kalani KAL-700T Tenor Natural · Ukulele tenor · R$ 359,00 −10% → R$ 323,10; pix: R$ 323,10 · available
 
-<sub>Tools: `query_catalog` (intent=lookup), `query_catalog` (intent=lookup), `quote_product` (product_id=127, method=pix) · sources: Catálogo da loja; Manual da loja, seção 3; Manual da loja, seção 6.2 · next_action `none` · 4.14 s in the browser (3841 ms server) · 4 model calls · tokens in/out 13579/193</sub>
+<sub>Tools: `query_catalog` (intent=lookup), `quote_product` (product_id=127, method=pix) · sources: Catálogo da loja; Manual da loja, seção 3; Manual da loja, seção 6.2 · next_action `none` · 3.07 s in the browser (2766 ms server) · 3 model calls · tokens in/out 9893/128</sub>
 
 ## Automatic checks
 

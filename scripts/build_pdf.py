@@ -106,6 +106,11 @@ def values() -> dict[str, str]:
         raise SystemExit(f"examples come from more than one revision: {metas}")
     v["revision"], v["commit"] = metas.pop()
     v["examples_pass"] = f"{sum(all(ok for _, ok in r['checks']) for r in raws)}/{len(raws)}"
+    review = re.findall(r"^\| 0\d \|.*\| (PASS|NEEDS EDITS[^|]*|REWRITE[^|]*) \|$", (ROOT / "examples" / "README.md").read_text(), re.M)
+    if len(review) != len(raws):
+        raise SystemExit(f"examples/README.md reviews {len(review)} conversations, captured {len(raws)}")
+    v["review_pass"] = str(sum(r == "PASS" for r in review))
+    v["review_edits"] = str(sum(r.startswith("NEEDS EDITS") for r in review))
     return v
 
 

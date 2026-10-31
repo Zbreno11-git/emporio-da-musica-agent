@@ -1,6 +1,6 @@
 # Security: the LLM attack surface (D23)
 
-Written for the evaluators. It maps the [OWASP Top 10 for LLM Applications (2025)](https://genai.owasp.org/llm-top-10/) items that apply to this agent to the control that handles each one, the test that proves it, and what was **not** verified. The web-layer hardening (headers, body limit, cookies, `/admin`) is in the [QA report](qa/README.md#3-hardening-checked-on-the-hosted-url-revision-00010-x5j).
+Written for the evaluators. It maps the [OWASP Top 10 for LLM Applications (2025)](https://genai.owasp.org/llm-top-10/) items that apply to this agent to the control that handles each one, the test that proves it, and what was **not** verified. The web-layer hardening (headers, body limit, cookies, `/admin`) is in the [QA report](qa/README.md#3-hardening-checked-on-the-hosted-url-revisions-00010-x5j-and-00011-z2g).
 
 ## The principle
 

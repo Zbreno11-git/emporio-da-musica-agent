@@ -4,14 +4,14 @@ A text customer-service agent for **Empório da Música**, a fictional musical-i
 
 > **Language.** The repository, code and documentation are in English. The agent talks to customers in **Brazilian Portuguese**, the language of the store and its customers; the example conversations are shown in Portuguese with an English translation ([D16](docs/DECISIONS.md)).
 
-**Live demo:** https://emporio-agent-669786539213.southamerica-east1.run.app (revision `emporio-agent-00010-x5j`, commit `69f4b68`). The demo profiles are fictitious, the service answers at most 400 model turns a day, and the technical panel under each answer shows the tool calls.
+**Live demo:** https://emporio-agent-669786539213.southamerica-east1.run.app (revision `emporio-agent-00011-z2g`, commit `ec6f6d6`). The demo profiles are fictitious, the service answers at most 400 model turns a day, and the technical panel under each answer shows the tool calls.
 
 | Evidence | Result | Where |
 | --- | --- | --- |
-| Tests (domain, tools, HTTP, browser; scripted fake model, no API key) | `200 passed` | [`tests/`](tests/) |
-| Mutation net (deliberate defects each named test must catch) | `78/78 mutations caught` | [`scripts/mutation_check.py`](scripts/mutation_check.py) |
+| Tests (domain, tools, HTTP, browser; scripted fake model, no API key) | `206 passed` | [`tests/`](tests/) |
+| Mutation net (deliberate defects each named test must catch) | `79/79 mutations caught` | [`scripts/mutation_check.py`](scripts/mutation_check.py) |
 | Hosted QA with the real model, clicked in Chromium | `13/13 hosted cases passed` | [QA report](docs/qa/README.md) |
-| Five real conversations captured on the delivered revision, reviewed | 5/5 automatic checks pass | [`examples/`](examples/README.md) |
+| Five real conversations captured on the delivered revision, reviewed | 5/5 automatic checks pass; reviewed: 3 PASS, 2 with wording notes | [`examples/`](examples/README.md) |
 | Red-team battery (9 attacks × 2 on the real model) | 0 blockers | [security](docs/security.md) |
 | Cost per answer, measured | US$ 0.00203 per answer | [cost model](evals/cost-model.md) |
 
@@ -52,6 +52,34 @@ Response: text + cards (from tool results) + sources (manual sections, orders, c
 ```
 
 More detail: [`docs/architecture.md`](docs/architecture.md). Every decision, with who made it and the trigger that reopens it: [`docs/DECISIONS.md`](docs/DECISIONS.md) (D1–D23).
+
+## Technical decisions and why
+
+The challenge leaves these choices open and asks for the reasoning. Each one is recorded with who decided it, the alternative and the trigger that would reopen it in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
+| Decision | Choice | Why, and what it cost |
+| --- | --- | --- |
+| Agent approach | **Function calling** with five narrow tools, a hand-written loop (`app/agent.py`) and no agent framework | The model decides *when* to look something up (catalog, quote, order, manual, hand-off); the backend decides *what is true*. Agent frameworks (LangChain's SQL agent, Pydantic AI) were studied for patterns ([references](docs/references-and-skills.md)); adopting one would put a second orchestration layer between the model and the server checks. Cost: the loop, budgets and retries are ours to maintain (D2) |
+| Data access | The model writes a read-only `SELECT` that returns only `product_id`; prices come from deterministic functions in integer cents | Flexible search ("violão de nylon até R$ 800") without letting the model touch a number: names, prices and availability are read from the canonical table, and promotion × PIX × installments are computed in `app/tools/quote.py`. Cost: a deny-by-default SQL authorizer with step, time and row caps (D3, D4) |
+| Model and provider | `gemini-3.1-flash-lite` via the `google-genai` SDK | Chosen by a benchmark whose rule was written before running: the cheapest model that passes the three blockers (cross-profile leak, divergent price, claimed action) in every run. `gemini-3.6-flash` cost about 5× more per turn. Cost: a light model makes more mistakes, so the server checks had to grow; it shuts down on 2027-05-07 and its measured replacement is `gemini-3.5-flash-lite` (D14) |
+| Retrieval | The manual split by section, **BM25** with a small synonym list and related-section expansion | 12/12 on the labeled questions (top 3) met the target set in the specs, so embeddings were not built. Cost: paraphrases are weaker (4/6); a miss leads to a question or a hand-off, not an invented rule (D5, [evaluation](evals/policy-retrieval.md)) |
+| Prompt strategy | One system prompt with the persona (brand voice examples), hard rules on facts, tool-use rules, policy rules and a security rule; the server checks the output | The prompt says what to do; the server guarantees what must never happen. The later prompt changes were measured on the benchmark before shipping, and one of them broke an unrelated answer and was rewritten ([benchmark](evals/model-benchmark.md)) |
+| Interface | HTML/CSS/JS served by FastAPI, Ressonância brand | Control over where the agent's text ends and the product cards, sources and hand-off box begin, at phone width. Cost: more frontend code than a Streamlit or Gradio chat (D1, D7) |
+| Conversation history | Kept per session in server memory (last 10 turns), with the products and amounts already shown | Follow-ups like "e no PIX?" need the previous turn. Cost: an instance restart starts a new conversation; there is no database (D6) |
+| Identity | Three fictitious demo profiles chosen in the interface; the session, not the chat, says who the customer is | An order number typed in the chat identifies the record, not the customer. Real login is out of scope for the prototype (D6) |
+
+## Assumptions
+
+Where the challenge data or manual left a gap, the agent follows these assumptions ([`docs/source-findings.md`](docs/source-findings.md) has the full list):
+
+- **Installments:** the manual's §3 table (minimum R$ 100) and §3.1 (R$ 80 for 4–6x) disagree, so the quote returns `needs_confirmation` and offers an option valid under every reading.
+- **Shipping for exactly R$ 500** in the metro area is not covered (§5.1 has "above" and "below"), so the agent explains both bands and prepares a hand-off.
+- **PIX** gives 5% off the list price (§3) and does not stack with an active promotion (§6.2).
+- **Promotions** have no validity dates in the data; only the active flag counts.
+- **Orders:** the recorded total is the historical one (items have no unit price). Order 8's delivery estimate (2026-02-28) is in the past, so it is presented as "a previsão registrada", never as live tracking.
+- **What the store sells:** instruments only (manual §1); accessories and amplifiers are declined politely, and the agent still helps with the instrument part.
+- **Customer data:** the demo uses three fictitious profiles; no name, e-mail or phone from the CSVs is shown or stored.
+- **Time:** "open now?" uses the server's clock in Campo Grande's time zone; holidays are not in the data, so the agent says to confirm special dates with the store.
 
 ## How it avoids making things up
 
@@ -121,6 +149,14 @@ Reproducing the evidence (real Gemini, a few US cents each): `scripts/benchmark_
 - **Wording outside the checked list** (for example "um instrumento de qualidade para os estudos") is governed by the prompt and the review of the captured conversations, not by a server check.
 - **Rate limit and daily cap** were tested locally with low limits, not on the URL.
 - **The technical panel is on in the demo** so the evaluators can see each answer's tool calls; it must be off (`EXPOSE_TRACE=0`) with real customers (D23).
+
+## With more time
+
+- Measure retrieval with embeddings on the same labeled questions and paraphrases, and keep BM25 as the fallback.
+- Persist sessions and the `/admin` aggregates (a small database) so an instance restart does not lose them.
+- Turn the prompt-governed wording (for example "excelente para começar") into checks where the catalog has the data, and fix the six contradictory catalog descriptions at the source.
+- Run the red-team battery on every prompt change in CI, and check the real billing report against the token-based cost estimate.
+- Real customer identity (login or a verified channel) instead of demo profiles.
 
 ## Repository layout
 

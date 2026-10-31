@@ -2,14 +2,14 @@
 
 > Working file with the state of the **current** session, updated at every step.
 
-## ▶️ RESUME HERE — 2026-10-31 19:15 São Paulo (S8 done; C10 waits only for Breno's submission)
+## ▶️ RESUME HERE — 2026-10-31 20:18 São Paulo (S8 done; C10 waits only for Breno's submission)
 
 **Repository state:** tree clean after the closing commit; HEAD == `origin/main` (check `git log -1` against `git ls-remote origin refs/heads/main`). No locks, no background runs.
 
 **World state (measured 2026-10-31):**
-- Cloud Run `emporio-agent` serves **`emporio-agent-00010-x5j`**, label `commit=69f4b68` (the last code commit; later commits are docs only). Secrets `gemini-api-key:1`, `admin-token:1`. `/health` ok; `HEAD /` 200.
-- Hosted QA `13/13` on `00010-x5j`; the five delivery conversations captured on it (5/5 checks, reviewed in `examples/README.md`).
-- Gates: `200 passed`; `78/78 mutations caught`. Clean clone (README followed literally, challenge ZIP): `dataset_id 1412d32a6eeb`, `200 passed`, `78/78` with `EMPORIO_SNAPSHOT`, milestone 1 `"passed": true`.
+- Cloud Run `emporio-agent` serves **`emporio-agent-00011-z2g`**, label `commit=ec6f6d6` (the last code commit: `Range` ignored after Breno's session logs showed a link-preview bot getting `400` on `/`; later commits are docs only). Secrets `gemini-api-key:1`, `admin-token:1`. `/health` ok; `HEAD /` 200.
+- Hosted QA `13/13` on `00011-z2g`; the five delivery conversations captured on it (5/5 checks; review: 3 PASS, 2 NEEDS EDITS for wording, 0 blockers, in `examples/README.md`).
+- Gates: `206 passed`; `79/79 mutations caught`. Clean clone (README followed literally, challenge ZIP): `dataset_id 1412d32a6eeb`, `200 passed`, `78/78` with `EMPORIO_SNAPSHOT`, milestone 1 `"passed": true`.
 - Final benchmark runs (`evals/benchmark/*-s9.jsonl`, `*-s9sec.jsonl`): store scenarios 0 blockers on both models; red-team battery 18 turns, 0 blockers. Cost model: US$ 0.00203 per answer; US$ 16.89 a month for 2,000 conversations (R$ 91,57).
 - Delivery PDF built at the repository root (git-ignored): `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`, from `docs/delivery/report.template.html` by `scripts/build_pdf.py`. E-mail text: `docs/delivery/email-reply.md`.
 
@@ -26,7 +26,7 @@
 - Shell traps: `pkill -f` kills its own shell (use `fuser -k 8765/tcp`); argparse needs `--tag=-s9`; `| tail` hides a script's exit code; the challenge ZIP name has a decomposed "é" (use a glob); edit `CLAUDE.md` with the Edit tool.
 - Before every commit: `git add`, then `scripts/check_staged.py` → PASS.
 
-**Before trusting this block:** `git status --short` empty; `gcloud run services describe ...` → `emporio-agent-00010-x5j 69f4b68`; `curl $URL/health` ok; `pytest -q` → `200 passed`.
+**Before trusting this block:** `git status --short` empty; `gcloud run services describe ...` → `emporio-agent-00011-z2g ec6f6d6`; `curl $URL/health` ok; `pytest -q` → `206 passed`.
 
 ## Proofs
 
@@ -71,3 +71,6 @@
 | Delivery captures on `00010-x5j` | `scripts/capture_examples.py` · `--rerender` | `01..05: PASS`; `translations pending: 0` ×5 | 2026-10-31 |
 | Clean clone (C10) | README steps in a fresh clone | `dataset_id 1412d32a6eeb`; `200 passed`; `78/78` with `EMPORIO_SNAPSHOT`; smoke `"passed": true` | 2026-10-31 |
 | Delivery PDF | `scripts/build_pdf.py` | `wrote docs/delivery/report.html and Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf` (4 pages, looked at) | 2026-10-31 |
+| Session logs (Breno's use) | `gcloud logging read` on the service | chats 200 (1.0–3.3 s); 4× `GET / 400` from "Mozilla/5.0 (compatible)" (malformed `Range`, reproduced) | 2026-10-31 |
+| Range fix live | `curl -H 'Range: bytes=abc' $URL/` | `200` on `emporio-agent-00011-z2g ec6f6d6`; `206 passed` · `79/79` | 2026-10-31 |
+| Hosted QA and captures on `00011-z2g` | `qa_capture.py` · `capture_examples.py` | `13/13`; `01..05: PASS`; translations pending 0 | 2026-10-31 |

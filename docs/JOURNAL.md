@@ -2,6 +2,10 @@
 
 > One entry per session, newest first. Each entry covers what was done, what was decided and why, and what was learned. Entries before 2026-10-31 evening were written in Portuguese and translated here.
 
+## 2026-10-31 night — after Breno's own session
+
+**Found.** Breno used the demo and was satisfied with the answers. The request logs (no customer text is logged, D20) showed every chat at 200, but four `GET / 400` from a link-preview bot ("Mozilla/5.0 (compatible)", HTTP/1.1): Starlette answers a malformed or unknown-unit `Range` with 400. Reproduced on the URL, fixed by ignoring `Range` (RFC 9110 allows it), live as `00011-z2g`. Rereading the challenge statement showed the README lacked an explicit technical-decisions section, the assumptions and "with more time"; added. The recapture on `00011-z2g` has two answers with wording notes ("está a caminho" for a shipped order; a return answer that states the deadline only in the team summary); they are reviewed as captured, not recaptured until nicer.
+
 ## 2026-10-31 evening (second compact) — S8: debts, LLM-attack hardening (D23), capture, review, README, PDF
 
 **Done.**

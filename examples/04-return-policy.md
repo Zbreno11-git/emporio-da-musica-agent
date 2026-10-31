@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | URL | https://emporio-agent-669786539213.southamerica-east1.run.app |
-| Revision / commit | `emporio-agent-00010-x5j` / `69f4b68` |
+| Revision / commit | `emporio-agent-00011-z2g` / `ec6f6d6` |
 | Model | `gemini-3.1-flash-lite` |
 | Dataset | `1412d32a6eeb` |
-| Captured | 2026-10-31 19:02 (São Paulo) |
+| Captured | 2026-10-31 20:16 (São Paulo) |
 | Screenshot | [04-return-policy-390.png](screens/04-return-policy-390.png) |
 
 ## Conversation
@@ -16,18 +16,20 @@
 **Turn 1 · Customer:** Comprei online e me arrependi. Posso devolver?
 <br>*EN:* I bought online and changed my mind. Can I return it?
 
-**Turn 1 · Empório:** Para compras online, a loja permite a devolução por arrependimento em até sete dias corridos após o recebimento do instrumento, desde que ele esteja na embalagem original, sem sinais de uso e com todos os acessórios e manuais. Em que dia você recebeu o produto?
-<br>*EN:* For online purchases, the store accepts returns for a change of mind within seven calendar days of receiving the instrument, as long as it is in its original packaging, shows no signs of use and comes with all accessories and manuals. On what day did you receive the product?
+**Turn 1 · Empório:** Para compras feitas pela internet, a loja prevê o direito de arrependimento em até sete dias corridos após o recebimento do produto, desde que ele esteja na embalagem original e sem sinais de uso. Em que dia o seu instrumento chegou?
+<br>*EN:* For purchases made online, the store provides a right of withdrawal within seven calendar days of receiving the product, as long as it is in its original packaging and shows no signs of use. On what day did your instrument arrive?
 
-<sub>Tools: `search_policy` (question=devolução compra online arrependimento) · sources: Manual da loja, seção 4.1; Manual da loja, seção 4; Manual da loja, seção 3 · next_action `clarify` · 2.25 s in the browser (1869 ms server) · 2 model calls · tokens in/out 6881/80</sub>
+<sub>Tools: `search_policy` (question=devolução compra online arrependimento) · sources: Manual da loja, seção 4.1; Manual da loja, seção 4; Manual da loja, seção 3 · next_action `clarify` · 2.19 s in the browser (1831 ms server) · 2 model calls · tokens in/out 6881/74</sub>
 
 **Turn 2 · Customer:** Chegou anteontem, dia 29/10.
 <br>*EN:* It arrived the day before yesterday, on 10/29.
 
-**Turn 2 · Empório:** Como você recebeu o produto no dia 29/10, você ainda está dentro do prazo de sete dias corridos previsto para a devolução por arrependimento, desde que o instrumento esteja na embalagem original, sem sinais de uso e com todos os acessórios e manuais. Você gostaria que eu preparasse um resumo deste caso para nossa equipe verificar os próximos passos?
-<br>*EN:* Since you received the product on 10/29, you are still within the seven calendar days allowed for a change-of-mind return, as long as the instrument is in its original packaging, shows no signs of use and comes with all accessories and manuals. Would you like me to prepare a summary of this case for our team to work out the next steps?
+**Turn 2 · Empório:** O resumo do seu atendimento já está pronto para ser enviado à nossa equipe pelo WhatsApp (67) 3321-4500. Basta mencionar que você quer realizar a devolução do produto recebido no dia 29/10 e eles cuidarão de tudo para ti.
+<br>*EN:* The summary of your request is ready to be sent to our team on WhatsApp (67) 3321-4500. Just mention that you want to return the product received on 10/29 and they will take care of everything for you.
 
-<sub>Tools: none · sources: Manual da loja, seção 4.1 (consultada na mensagem anterior) · next_action `clarify` · 2.51 s in the browser (2251 ms server) · 2 model calls · tokens in/out 7912/146 · server asked the model to correct its text</sub>
+<sub>Tools: `prepare_handoff` (summary=Cliente deseja devolver compra online recebida em 29/10 (dentro do prazo de 7 dias). Precisa de orientações da equipe para o procedimento., reason=requires_staff) · sources: none · next_action `contact_store` · 2.56 s in the browser (2307 ms server) · 2 model calls · tokens in/out 7953/190</sub>
+
+Hand-off: `prepared` (requires_staff) — Cliente deseja devolver compra online recebida em 29/10 (dentro do prazo de 7 dias). Precisa de orientações da equipe para o procedimento.
 
 ## Automatic checks
 

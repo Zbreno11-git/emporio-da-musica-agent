@@ -1,18 +1,18 @@
 {
   "meta": {
     "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
-    "revision": "emporio-agent-00010-x5j",
-    "commit": "69f4b68",
+    "revision": "emporio-agent-00011-z2g",
+    "commit": "ec6f6d6",
     "model": "gemini-3.1-flash-lite",
     "dataset_id": "1412d32a6eeb",
     "screenshot": "screens/04-return-policy-390.png",
-    "captured": "2026-10-31 19:02"
+    "captured": "2026-10-31 20:16"
   },
   "turns": [
     {
       "message": "Comprei online e me arrependi. Posso devolver?",
-      "request_id": "491eb867-5f08-4288-8e57-9de986018730",
-      "text": "Para compras online, a loja permite a devolução por arrependimento em até sete dias corridos após o recebimento do instrumento, desde que ele esteja na embalagem original, sem sinais de uso e com todos os acessórios e manuais. Em que dia você recebeu o produto?",
+      "request_id": "d10ce45e-fc8b-4e45-a7f4-479bd79e9b92",
+      "text": "Para compras feitas pela internet, a loja prevê o direito de arrependimento em até sete dias corridos após o recebimento do produto, desde que ele esteja na embalagem original e sem sinais de uso. Em que dia o seu instrumento chegou?",
       "cards": [],
       "sources": [
         {
@@ -40,7 +40,7 @@
       "next_action": "clarify",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 1869,
+        "duration_ms": 1831,
         "model_calls": 2,
         "tool_rounds": 1,
         "tools": [
@@ -55,50 +55,59 @@
         ],
         "usage": {
           "input": 6881,
-          "output": 80,
+          "output": 74,
           "thoughts": 0,
-          "total": 6961
+          "total": 6955
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.25,
-      "seconds": 2.25
+      "_seconds": 2.19,
+      "seconds": 2.19
     },
     {
       "message": "Chegou anteontem, dia 29/10.",
-      "request_id": "9dcd1e2c-d397-4a35-b1a9-d391688f8be0",
-      "text": "Como você recebeu o produto no dia 29/10, você ainda está dentro do prazo de sete dias corridos previsto para a devolução por arrependimento, desde que o instrumento esteja na embalagem original, sem sinais de uso e com todos os acessórios e manuais. Você gostaria que eu preparasse um resumo deste caso para nossa equipe verificar os próximos passos?",
+      "request_id": "e64384b3-2074-4f76-933d-f0aa23bf2b5c",
+      "text": "O resumo do seu atendimento já está pronto para ser enviado à nossa equipe pelo WhatsApp (67) 3321-4500. Basta mencionar que você quer realizar a devolução do produto recebido no dia 29/10 e eles cuidarão de tudo para ti.",
       "cards": [],
-      "sources": [
-        {
-          "type": "policy",
-          "id": "4.1",
-          "label": "Manual da loja, seção 4.1 (consultada na mensagem anterior)",
-          "page_start": 4,
-          "page_end": 4
-        }
-      ],
-      "next_action": "clarify",
+      "sources": [],
+      "next_action": "contact_store",
+      "handoff": {
+        "reason": "requires_staff",
+        "summary": "Cliente deseja devolver compra online recebida em 29/10 (dentro do prazo de 7 dias). Precisa de orientações da equipe para o procedimento.",
+        "channel_label": "WhatsApp de atendimento (manual da loja, seção 7)",
+        "destination": "(67) 3321-4500",
+        "delivery_status": "prepared"
+      },
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 2251,
+        "duration_ms": 2307,
         "model_calls": 2,
-        "tool_rounds": 0,
-        "tools": [],
+        "tool_rounds": 1,
+        "tools": [
+          {
+            "name": "prepare_handoff",
+            "args": {
+              "summary": "Cliente deseja devolver compra online recebida em 29/10 (dentro do prazo de 7 dias). Precisa de orientações da equipe para o procedimento.",
+              "reason": "requires_staff"
+            },
+            "ok": true,
+            "ms": 0
+          }
+        ],
         "usage": {
-          "input": 7912,
-          "output": 146,
+          "input": 7953,
+          "output": 190,
           "thoughts": 0,
-          "total": 8058
+          "total": 8143
         },
-        "text_corrected": true,
+        "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.51,
-      "seconds": 2.51
+      "_seconds": 2.56,
+      "seconds": 2.56
     }
   ],
   "checks": [
