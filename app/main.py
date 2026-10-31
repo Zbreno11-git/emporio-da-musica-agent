@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from app.agent import Agent, DeadlineExceeded, GeminiLLM, LLM, ProviderUnavailable
 from app.config import Settings, get_settings
 from app.contracts import ChatRequest, ChatResponse, ProfileRequest
-from app.session import CachedRequest, SessionStore
+from app.session import CachedRequest, DailyTurnCap, SessionStore
 from app.tools import orders as orders_tool
 
 COOKIE = "emporio_sid"
@@ -35,6 +35,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     settings = settings or get_settings()
     app = FastAPI(title="Empório da Música agent", docs_url=None, redoc_url=None)
     store = SessionStore(settings.session_ttl_s, settings.max_sessions)
+    daily_cap = DailyTurnCap(settings.max_turns_per_day)
     state = {"agent": Agent(settings, llm) if llm else None}
 
     def agent() -> Agent:
@@ -137,6 +138,8 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
         try:
             if not session.allow_turn(settings.turns_per_minute, time.monotonic()):
                 return error(429, "rate_limited", "Muitas mensagens em pouco tempo. Espere um minuto.", True, rid)
+            if not daily_cap.take():
+                return error(429, "daily_limit", "O atendimento de demonstração atingiu o limite de hoje.", False, rid)
             entry = CachedRequest(message=body.message, status="running")
             session.remember_request(rid, entry)
             generation = session.generation

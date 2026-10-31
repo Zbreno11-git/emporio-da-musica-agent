@@ -34,6 +34,7 @@ class Settings:
     session_ttl_s: int = 30 * 60
     max_sessions: int = 500
     turns_per_minute: int = 10
+    max_turns_per_day: int = 400  # whole process; protects the Gemini budget on the public demo
     thinking_level: str = ""
     expose_trace: bool = True
     extra: dict = field(default_factory=dict)
@@ -60,6 +61,7 @@ def get_settings() -> Settings:
         data_dir=Path(env.get("DATA_DIR", ROOT / "data" / "build")),
         timezone=env.get("APP_TIMEZONE", "America/Campo_Grande"),
         chat_timeout_s=float(env.get("CHAT_TIMEOUT_S", "25")),
+        max_turns_per_day=int(env.get("MAX_TURNS_PER_DAY", "400")),
         thinking_level=env.get("GEMINI_THINKING_LEVEL", ""),
         expose_trace=env.get("EXPOSE_TRACE", "1") == "1",
     )

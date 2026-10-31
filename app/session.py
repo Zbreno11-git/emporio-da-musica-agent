@@ -65,6 +65,24 @@ class Session:
         return True
 
 
+class DailyTurnCap:
+    """Process-wide cap on model turns per UTC day. It fails loudly (429) instead of silently spending more."""
+
+    def __init__(self, limit: int, today=lambda: time.strftime("%Y-%m-%d", time.gmtime())):
+        self.limit, self.today = limit, today
+        self.day, self.count = today(), 0
+        self._lock = threading.Lock()
+
+    def take(self) -> bool:
+        with self._lock:
+            if self.today() != self.day:
+                self.day, self.count = self.today(), 0
+            if self.count >= self.limit:
+                return False
+            self.count += 1
+            return True
+
+
 class SessionStore:
     def __init__(self, ttl_s: int, max_sessions: int, clock=time.monotonic):
         self.ttl_s = ttl_s

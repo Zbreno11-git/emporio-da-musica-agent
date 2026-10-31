@@ -1,0 +1,13 @@
+# Upload only what the image needs. Everything else (private inputs, .env, .venv, tests, docs) stays local.
+*
+!Dockerfile
+!requirements.txt
+!app/
+!app/**
+app/**/__pycache__/
+!data/
+!data/build/
+!data/build/catalog.db
+!data/build/orders-demo.db
+!data/build/policy_sections.json
+!data/build/manifest.json

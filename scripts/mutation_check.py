@@ -78,6 +78,7 @@ MUTATIONS = [
      f"{TP}::test_related_sections_are_added"),
     (A, '        if state.profile_required:\n            next_action = "choose_profile"',
      '        if False:\n            next_action = "choose_profile"', f"{TH}::test_order_as_visitor_asks_for_profile"),
+    (S, "            if self.count >= self.limit:", "            if False:", f"{TH}::test_daily_cap_stops_model_calls"),
 ]
 
 

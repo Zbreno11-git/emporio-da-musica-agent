@@ -295,3 +295,12 @@ def test_policy_amount_not_in_manual_is_rejected(settings):
     ])
     body = chat(client, "Quanto é o frete em Campo Grande?").json()
     assert "20,00" not in body["text"] and body["trace"]["text_fallback"] is True
+
+
+def test_daily_cap_stops_model_calls(settings):
+    s = replace(settings, max_turns_per_day=1)
+    client, llm = client_for(s, [say("a"), say("b")])
+    assert chat(client, "um").status_code == 200
+    second = chat(client, "dois")
+    assert second.status_code == 429 and second.json()["code"] == "daily_limit"
+    assert len(llm.seen) == 1
