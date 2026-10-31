@@ -185,6 +185,8 @@ MUTATIONS = [
      f"{TPM}::test_balanced_sound_is_a_quality_claim"),
     (A, "    if state.handoff is None:\n        problems += [f\"says a summary", "    if False:\n        problems += [f\"says a summary",
      f"{TH}::test_summary_claimed_without_the_handoff_tool_is_corrected"),
+    (M, 'IGNORED_HEADERS = (b"range", b"if-range")', "IGNORED_HEADERS = ()",
+     f"{THD}::test_malformed_range_is_ignored_not_400"),
 ]
 
 

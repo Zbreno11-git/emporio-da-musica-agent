@@ -73,3 +73,13 @@ def test_head_is_answered_like_get(settings, path):
     """Uptime checkers send HEAD; a 405 would read as the site being down."""
     client = TestClient(create_app(settings, llm=FakeLLM([])))
     assert client.head(path).status_code == 200
+
+
+@pytest.mark.parametrize("value", ["bytes=abc", "chars=0-10", "bytes=-"])
+@pytest.mark.parametrize("path", ["/", "/static/app.css"])
+def test_malformed_range_is_ignored_not_400(settings, path, value):
+    """Hosted logs (2026-10-31): a link-preview bot sent a malformed Range and got 400 on "/". RFC 9110 lets a server
+    ignore Range and requires ignoring an unknown unit; the pages and files are small, so Range is always ignored."""
+    client = TestClient(create_app(settings, llm=FakeLLM([])))
+    r = client.get(path, headers={"Range": value})
+    assert r.status_code == 200 and len(r.content) > 100

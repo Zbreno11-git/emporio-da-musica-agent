@@ -40,6 +40,9 @@ SECURITY_HEADERS = {
 }
 
 
+IGNORED_HEADERS = (b"range", b"if-range")
+
+
 class Hardening:
     """ASGI layer: refuses bodies over MAX_BODY_BYTES (declared or streamed) and adds the security headers."""
 
@@ -50,7 +53,10 @@ class Hardening:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope.get("path", "")
-        declared = dict(scope.get("headers") or []).get(b"content-length")
+        # Range is ignored (allowed by RFC 9110): the files are small, and Starlette answers a malformed Range with 400,
+        # which a link-preview bot hit on "/" in the hosted logs.
+        scope = {**scope, "headers": [(k, v) for k, v in scope.get("headers") or [] if k.lower() not in IGNORED_HEADERS]}
+        declared = dict(scope["headers"]).get(b"content-length")
         if declared is not None and (not declared.isdigit() or int(declared) > MAX_BODY_BYTES):
             return await self._too_large(scope, receive, send)
         if declared is None and scope.get("method") in ("POST", "PUT", "PATCH", "DELETE"):
