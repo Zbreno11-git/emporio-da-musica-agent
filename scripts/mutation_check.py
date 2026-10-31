@@ -182,6 +182,8 @@ MUTATIONS = [
      f"{TH}::test_handoff_summary_with_an_unsupported_fact_is_refused"),
     (A, '                 "equilibrad", "versatil",', '                 "versatil",',
      f"{TPM}::test_balanced_sound_is_a_quality_claim"),
+    (A, "    if state.handoff is None:\n        problems += [f\"says a summary", "    if False:\n        problems += [f\"says a summary",
+     f"{TH}::test_summary_claimed_without_the_handoff_tool_is_corrected"),
 ]
 
 

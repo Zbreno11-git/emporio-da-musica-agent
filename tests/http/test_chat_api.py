@@ -421,3 +421,16 @@ def test_handoff_summary_with_an_unsupported_fact_is_refused(settings):
     assert body["handoff"]["summary"] == "Cliente pede um desconto especial; equipe avalia."
     first = body["trace"]["tools"][0]
     assert first["name"] == "prepare_handoff" and first["ok"] is False
+
+
+def test_summary_claimed_without_the_handoff_tool_is_corrected(settings):
+    """Final capture review (04, turn 2): "preparei este resumo para o nosso atendimento" with no prepare_handoff call, so
+    the page showed no hand-off box (channel, "Ainda não foi enviado", copy button). The claim must match the tool."""
+    client, _ = client_for(settings, [
+        say('Preparei este resumo para o nosso atendimento: "Cliente quer devolver compra online."'),
+        call("prepare_handoff", reason="requires_staff", summary="Cliente quer devolver compra online recebida em 29/10."),
+        say("Preparei um resumo para a equipe; é só enviar no WhatsApp da loja."),
+    ])
+    body = chat(client, "Quero devolver, chegou dia 29/10.").json()
+    assert body["trace"]["text_corrected"] is True and body["trace"]["text_fallback"] is False
+    assert body["handoff"]["delivery_status"] == "prepared" and body["next_action"] == "contact_store"

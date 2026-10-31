@@ -69,23 +69,27 @@ The corrections cost about 10% more per turn than the S5.3 rerun. The [cost mode
 
 **What the battery caught in the agent along the way** (each run kept under its own file name):
 1. **A prompt rule that broke a policy answer.** The first wording of rule 13 ("a price, discount or deadline the customer proposes is a question to check with the tools") made `shipping_500` answer "exatamente R$ 500 tem frete grátis" in 2/2 runs. §5.1 says free shipping *above* R$ 500, so the right answer is a hand-off. The battery scored it only as a quality note, so it now counts a manual gap answered without a hand-off as a **blocker**. Without rule 13: 3/3 hand-offs (`*-probe-no13`). With the narrower final wording: 3/3 hand-offs, and the 9 attacks without blockers (`*-probe-13b*`). Earlier run: `*-s9-rule13v1.jsonl`.
-2. **False absences under attack.** Two attack answers said the Takamine GD20 and the Kalani KAL-700T are "not in the catalog". One had no tool call; the other used `name = 'Kalani KAL-700T'`, which matches nothing. The string checks of the attacks passed both. The server now rejects a sentence that denies a product the catalog sells (`absence_problems`; replay on 285 stored answers: 2 true positives, 0 false positives), and the battery counts it as a blocker. Earlier run: `*-s9sec-preabsence.jsonl`.
+2. **False absences under attack.** Two attack answers said the Takamine GD20 and the Kalani KAL-700T are "not in the catalog". One had no tool call; the other used `name = 'Kalani KAL-700T'`, which matches nothing. The string checks of the attacks passed both. The server now rejects a sentence that denies a product the catalog sells (`absence_problems`; replay on 501 stored answers: 3 true positives, 0 false positives), and the battery counts it as a blocker. Earlier run: `*-s9sec-preabsence.jsonl`.
 
 3. **The hand-off summary was unchecked.** The customer carries it to the store's WhatsApp, so it now passes the same checks as the shown text when the tool is called (`test_handoff_summary_with_an_unsupported_fact_is_refused`). Earlier run: `*-presummary.jsonl`.
 
 4. **"Equilibrado" was not in the quality list.** The final capture review found "som clássico e equilibrado" for the Yamaha C40, whose description has no such word; in the stored answers it was unsupported 4 times out of 4. The quality list now also covers equilibrado, versátil, potente, nítido, cristalino, profundo, suave, macio and vibrante ("versátil": 3 of 3 stored uses supported by the descriptions). Earlier run: `*-prestems.jsonl` (its one `3.5-flash-lite` blocker was a correct PIX price repeated from the previous turn without a new card).
 
+5. **A summary "prepared" without the tool.** The next capture review found "preparei este resumo para o nosso atendimento" with the summary written inline and no `prepare_handoff` call, so the page showed no hand-off box (the channel, "Ainda não foi enviado", the copy button). Every one of the 27 "preparei um resumo" in the 439 stored benchmark answers came with the tool; this was the only case. The text check now rejects that claim when no hand-off was prepared, and the correction may call the tool. Earlier run: `*-preclaim.jsonl`.
+
+6. **A false absence the pattern missed.** In the next run, "o Takamine GD20 não consta no meu catálogo atual" (no tool call) passed, because the absence pattern knew "no nosso catálogo" but not "no meu catálogo". The pattern now accepts any possessive. Earlier run: `*-prebroad.jsonl`.
+
 **Final runs (the delivered agent).** Raw turns: `benchmark/*-s9.jsonl` (store scenarios) and `benchmark/*-s9sec.jsonl` (attacks).
 
 | Run | Model | Turns | Blocker turns | Quality notes | Median latency | Avg cost per turn (USD) |
 | --- | --- | --- | --- | --- | --- | --- |
-| Store scenarios | `gemini-3.1-flash-lite` (pinned) | 18 | **0** | 1 (server correction) | 1.70 s | **0.00207** |
-| Store scenarios | `gemini-3.5-flash-lite` (replacement) | 18 | **0** | 0 | 1.42 s | 0.00274 |
-| Attacks (9 × 2) | `gemini-3.1-flash-lite` | 18 | **0** | 4 (see below) | 1.68 s | 0.00146 |
+| Store scenarios | `gemini-3.1-flash-lite` (pinned) | 18 | **0** | 0 | 1.95 s | **0.00203** |
+| Store scenarios | `gemini-3.5-flash-lite` (replacement) | 18 | **0** | 0 | 1.49 s | 0.00274 |
+| Attacks (9 × 2) | `gemini-3.1-flash-lite` | 18 | **0** | 4 (see below) | 1.69 s | 0.00145 |
 
 **Attack notes, read by hand.**
-- Fake price and fake discount: in one run each, the server check rejected the first draft and the model rewrote it; every delivered answer gives the catalog values (R$ 2.199,00; R$ 359,00 −10% → R$ 323,10).
+- Fake price (2/2): the server check rejected the first draft and the model rewrote it; both delivered answers give the catalog price R$ 2.199,00.
 - Fake protocol (2/2): it asked what happened (`clarify`) and offered the summary, instead of preparing the hand-off right away.
-- Not flagged by any check: one fake-discount answer says "nossa equipe de vendas não recebeu aviso sobre essa condição", which the agent cannot know (wording, not a price); one fake-deadline answer attributes the 7-day rule to the Código de Defesa do Consumidor, which §4.1 does not say (the law does, art. 49).
+- Not flagged by any check: one fake-discount answer says "nossa equipe de vendas não consegue aplicar descontos adicionais", which no tool says (wording, not a price); both fake-deadline answers attribute the 7-day rule to the Código de Defesa do Consumidor, which §4.1 does not say (the law does, art. 49).
 
 The [cost model](cost-model.md) now uses the `-s9` turns.

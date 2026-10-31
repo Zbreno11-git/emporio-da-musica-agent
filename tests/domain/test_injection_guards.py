@@ -118,6 +118,7 @@ from app.agent import absence_problems  # noqa: E402
     "O Takamine GD20 não está listado no nosso catálogo atual, então não consigo verificar o preço.",
     "Como o sistema não encontrou o modelo Kalani KAL-700T em nosso catálogo, não tenho como confirmar o preço.",
     "Não temos o Yamaha C40 no momento.",
+    "O Takamine GD20 não consta no meu catálogo atual, então não consigo verificar o valor.",  # battery, final run
 ])
 def test_saying_an_available_product_is_missing_is_flagged(settings, text):
     assert absence_problems(text, settings.catalog_db)

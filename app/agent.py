@@ -328,6 +328,12 @@ def _cents(whole: str, frac: str | None) -> int:
     return int(whole.replace(".", "")) * 100 + int((frac or "0").ljust(2, "0"))
 
 
+# "Preparei um resumo" is true only after prepare_handoff: the page then shows the channel and "not sent yet". In the
+# final capture review the model wrote the summary inline without the tool (439 benchmark answers: 0 such cases).
+_SUMMARY_CLAIM_RE = re.compile(r"\b(preparei|deixei (pronto|preparado)|montei|organizei|elaborei)\b[^.!?]{0,60}\bresumo",
+                               re.IGNORECASE)
+
+
 def money_mentions(text: str) -> list[int]:
     return [_cents(whole, frac) for whole, frac in _MONEY_RE.findall(text)]
 
@@ -484,9 +490,9 @@ def quality_problems(text: str, product_facts: str) -> list[str]:
 # under a prompt injection): one lookup used name = 'Kalani KAL-700T', matched nothing, and the model said the store
 # does not have it. A sentence that denies a named product is checked against the catalog itself.
 _ABSENCE_RE = re.compile(
-    r"\bnao (esta|consta|aparece)\w* (listad|no (nosso )?(catalogo|sistema|estoque)|em (nosso )?catalogo|disponivel|"
-    r"cadastrad|a venda|em estoque)|\bnao (encontrei|achei|encontramos|achamos|encontrou|localizei|temos|"
-    r"trabalhamos com|vendemos)\b|\bfora do (nosso )?catalogo")
+    r"\bnao (esta|consta|aparece|existe)\w* (listad|(no|em|do) (nosso |meu |o )?(catalogo|sistema|estoque)|disponivel|"
+    r"cadastrad|a venda|em estoque)|\bnao (o |a )?(encontrei|achei|encontramos|achamos|encontrou|localizei|temos|"
+    r"trabalhamos com|vendemos)\b|\bfora do (nosso |meu )?catalogo")
 _SENTENCE_RE = re.compile(r"[^.!?\n]+")
 _CLAUSE_SPLIT_RE = re.compile(r",?\s+(?:mas|porém|porem|só que|e sim)\s+|;")  # "não vendemos X, mas temos Y"
 
@@ -537,6 +543,9 @@ def check_text(text: str, state: TurnState, context_cents: set[int]) -> list[str
     problems += [f"percentage {p}% has no evidence" for p in map(int, _PERCENT_RE.findall(text)) if p not in pcts]
     problems += [f"claims an action that was not executed: '{m.group(0)}'" for m in _CLAIM_RE.finditer(text)]
     problems += [f"promises an action no system performs: '{m.group(0)}'" for m in _PROMISE_RE.finditer(text)]
+    if state.handoff is None:
+        problems += [f"says a summary was prepared but prepare_handoff was not called: '{m.group(0)}'"
+                     for m in _SUMMARY_CLAIM_RE.finditer(text)]
     problems += product_reference_problems(text, _evidence_text(state))
     problems += absence_problems(text, state.settings.catalog_db)
     facts = _product_facts(state)
