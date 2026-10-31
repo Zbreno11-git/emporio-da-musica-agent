@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 12 of 14 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3, S6, S6b). Next: S7, S8.
+**Progress: 13 of 14 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3, S6, S6b, S7). Next: S8.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -271,7 +271,9 @@ If the work runs late, cut in this order (unchanged):
   - a sentinel string from the customer message does not appear in `repr(metrics.__dict__)` or in the JSON.
 - Mutations: a token check that always passes; the message stored in the collector; cost without thinking tokens; top 4 instead of 3. Each must be caught.
 
-### S7 · Testing & hardening, documented (≈3 h) [OFF + URL] → C9 — D21
+### ✅ S7 · Testing & hardening, documented (done 2026-10-31) [OFF + URL] → C9 — D21
+- [x] Hardening layer (CSP, nosniff, no-referrer, DENY, no-store, 16 KiB body limit declared or streamed, generic 500 that releases the request id, docs closed); 13 browser tests with the fake model; `scripts/qa_capture.py` on the URL; revisions `00003-7w6` (11/12 hosted: out-of-scope asked preferences) → prompt fix measured 10/10 → `00004-8vj` (12/12); [QA report](qa/README.md); 152 tests, 58/58 mutations
+
 **Does:**
 - **Dependencies:** `playwright` pinned in `requirements-dev.txt`, using the browsers already cached.
 - **Fake model:** `FakeLLM`/`call`/`say` move from `tests/http/test_chat_api.py` to `tests/fakes.py`, imported by both suites. It is still labeled as a mock.

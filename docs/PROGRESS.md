@@ -2,22 +2,31 @@
 
 > Working file with the state of the **current** session, updated at every step.
 
-## ▶️ RESUME HERE — 2026-10-31, ~15:30 America/Campo_Grande (19:30 UTC) — before a /compact
+## ▶️ RESUME HERE — 2026-10-31 17:40 São Paulo (S7 closed)
 
-**Repository state:** tree clean · HEAD = the commit `chore: checkpoint before compact (S5 benchmark done)` (check with `git log -1`; must equal `git ls-remote origin refs/heads/main`) · locks: none · background runs: none (the S5 benchmark finished; raw output in `evals/benchmark/*.jsonl`).
+**Repository state:** tree clean after the S7 docs commit (check `git log -1`; must equal `git ls-remote origin refs/heads/main`) · locks: none · background runs: none. A local uvicorn on port 8765 may still be running from S6/S6b (`fuser -k 8765/tcp` stops it; no check depends on it).
 
-**World state (measured 2026-10-31 ~19:05):** Cloud Run `emporio-agent` serves revision `emporio-agent-00002-8wx`, label `commit=37c5597`, `GEMINI_MODEL=gemini-3.1-flash-lite`. URL https://emporio-agent-669786539213.southamerica-east1.run.app. `/health` → 200 with dataset `1412d32a6eeb`. Billing linked; budget `emporio-demo-cap` R$ 30. No CI in this project (gates run locally).
+**World state (measured 2026-10-31 17:31–17:35 SP):**
+- **Cloud Run:** `emporio-agent` serves revision **`emporio-agent-00004-8vj`**, label `commit=8589cff`, model `gemini-3.1-flash-lite`.
+- **Secrets:** `GEMINI_API_KEY=gemini-api-key:1` and `ADMIN_TOKEN=admin-token:1`.
+- **Checks:** `/health` 200; hosted QA 12/12 ([report](qa/README.md)).
+- **Billing:** linked; budget `emporio-demo-cap` R$ 30. Gemini spend so far is cents (≈ 200 benchmark and QA turns × ≈ US$ 0.002).
 
-**Current objective:** close S5 with the measured cost model (D19), then S6 (UI), S6b (`/admin`, D20), S7 (testing and hardening with a documented QA report and screenshots, D21; second revision) and S8 (real capture, final README, delivery PDF) before the freeze on **Tue 2026-11-03 23:59 São Paulo**. First plan these sessions in detail (phases, checkpoints with expected numbers) in `docs/SESSIONS.md`, then build them.
+**Current objective:** S8, before the freeze on **Tue 2026-11-03 23:59 São Paulo** (target: done by 20:00 on Nov 3; it can start earlier):
+- real capture and review;
+- final README and clean-clone reproduction;
+- delivery PDF and e-mail text.
 
-**S5.2 closed 2026-10-31 16:39 SP (C7b, `4ff2d88`); S5.3 closed 16:57 SP (C7c, D22, `bd51140`); S6 closed 17:09 SP (C8, `a2f604f`); S6b closed ~17:30 SP (C8b)** — times from the commits; an earlier version of this line had UTC-shifted times. Next: S7 (testing & hardening, QA report, redeploy with `ADMIN_TOKEN=admin-token:1`). Screens in `docs/qa/screens/` show chat times in UTC (headless default); S7 recaptures them with `timezone_id=America/Campo_Grande`. The local server code is ahead of the Cloud Run revision (`37c5597`) until the S7 redeploy. The original S5.2 instruction, kept for the record:
+**Exact next step (S8.1):** write `scripts/capture_examples.py`, reusing the `Run` helper pattern of `scripts/qa_capture.py`. It captures on the hosted URL the 5 conversations of guide 03 §6 into `examples/NN-*.md`:
+1. discovery (nylon ≤ R$ 800, then "e no PIX?");
+2. promotion + PIX (Kalani);
+3. authorized order (A/8 after choosing the profile);
+4. return (online, then give the delivery date);
+5. out of scope (amplifier + bass).
 
-**Former next step (S5.2):** write `scripts/cost_model.py`. It reads `evals/benchmark/2026-10-31-*.jsonl` and `evals/pricing.json` and writes `evals/cost-model.md` with:
-- the average cost per answer and per turn type for `gemini-3.1-flash-lite` (pinned) and `gemini-3.5-flash-lite` (migration path);
-- a monthly projection for 500 / 2,000 / 10,000 conversations, with turns per conversation stated as an assumption (e.g. 4) plus a sensitivity line;
-- Cloud Run as a separate line, from the official Cloud Run pricing page fetched that day.
+Each file holds the PT-BR transcript with an English translation, the revision, commit and dataset, the tools and public ids, the duration and a screenshot. Expected: 5/5 without blockers.
 
-Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (benchmark summary). Then S5.3: fix the prompt so the out-of-scope question also queries the catalog for the in-scope part (the bass), and rerun only that scenario twice with `3.1-flash-lite`.
+Then S8.2: run `/qa-response` on each conversation, and carry the two observations from `docs/qa/README.md` §4 ("Pode sim!" before the delivery date; "Como te falei").
 
 **Checkpoints:**
 
@@ -33,20 +42,23 @@ Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (ben
 | C6 | First Cloud Run revision | ✅ rev `00002-8wx` / `37c5597` |
 | C7 | Benchmark pins `GEMINI_MODEL` | ✅ `gemini-3.1-flash-lite` ([report](../evals/model-benchmark.md)) |
 | C7b | Cost model for the PDF (D19) | ✅ delivered version: 0.00185 USD/turn; 2,000 conversations × 4 turns ≈ US$ 15.47/month incl. Cloud Run gross ([report](../evals/cost-model.md)) |
-| C7c | S5.3 guards (D22): no invented products, false absences or promises | ✅ rerun 18/18 turns, 0 blockers, 0 quality notes on both lite models ([report](../evals/model-benchmark.md)) |
-| C8 | UI at 320/390/desktop | ✅ local, real Gemini: card R$ 2.199,00 = DTO 219900 → R$ 2.089,05 = DTO 208905 at 320/390/1280, 0 px horizontal overflow, 0 console errors, 1 avatar per turn; order flow visitor → B (no leak) → A ([screens](qa/screens/)) |
-| C8b | `/admin` with token, aggregates only (D20) | ✅ local: wrong/missing/unconfigured token → 404; 2 real turns → avg US$ 0.00179, topics "Busca no catálogo" 1 / "Preço no PIX" 1, top 3 led by Yamaha C40 (2×); secret `admin-token` v1 (hash = `.env`), accessor only `emporio-agent-sa`; deployed in S7 |
-| C9 | Playwright + failures + QA report with screenshots (D21), second revision | ⬜ |
-| C10 | 5 real conversations, README, clean clone, PDF | ⬜ |
+| C7c | S5.3 guards (D22): no invented products, false absences or promises | ✅ rerun 18/18 turns, 0 blockers, 0 quality notes on both lite models |
+| C8 | UI at 320/390/desktop | ✅ `a2f604f` |
+| C8b | `/admin` with token, aggregates only (D20) | ✅ `ebf4247`; on the URL: no token 404, token 200 |
+| C9 | Playwright + failures + QA report with screenshots (D21), second revision | ✅ 152 tests, 58/58 mutations, hosted 12/12 on `00004-8vj` / `8589cff` ([QA](qa/README.md)) |
+| C10 | 5 real conversations, README, clean clone, PDF | ⬜ next (S8) |
 
 **Re-read, in this order:**
-1. `CLAUDE.md` — inviolable rules, language (D16), GCP boundary, freeze.
+1. `CLAUDE.md`: inviolable rules, language (D16), GCP boundary, freeze.
 2. This block.
-3. `docs/SESSIONS.md` — sections S5 (cost model), S6, S7, S8 and Risks.
-4. `docs/DECISIONS.md` — D11–D19, especially D13 (blockers), D14 (model), D16 (language), D17 (delivery PDF), D19 (cost).
-5. `evals/model-benchmark.md` and `evals/pricing.json` — the numbers the cost model uses.
-6. Skills: `software-build` (session protocol); `frontend-design` + `frontend-e-ux` for S6; `webapp-testing` + `testes-que-provam` for S7; `qa-response` (explicit `/qa-response`) and `evidencia` for S8; `nuvem-e-deploy` before any redeploy.
-7. Code for S6: `app/static/index.html` (minimal page to replace), `app/contracts.py` (DTO), the brand guide at `_private_inputs/guides/01-branding/01_BRANDING.md` with `assets/`, and the mockup at `_private_inputs/visual-references/ui-opcao-1-emporio_mockup.png`.
+3. `docs/SESSIONS.md`: S8 and Risks.
+4. `docs/DECISIONS.md`: D13, D16, D17, D19, D20, D22.
+5. `docs/qa/README.md` (§4 observations) and `evals/cost-model.md` (numbers for the PDF).
+6. Skills:
+   - `software-build`;
+   - `qa-response` (explicit `/qa-response`) and `evidencia` for S8;
+   - `nuvem-e-deploy` before any redeploy;
+   - for the PDF, plan `docs/delivery/report.html` → `scripts/build_pdf.py` with Playwright `page.pdf()`.
 
 **Decisions from the conversation (and where they are written):**
 - Freeze Tue 2026-11-03 23:59 São Paulo — Breno — D11.
@@ -57,37 +69,39 @@ Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (ben
 - Benchmark candidates revised to 3.1-flash-lite / 3.5-flash-lite / 3.6-flash — Breno — D14.
 - Measured cost model in the PDF — Breno — D19.
 - Never use the `altivaserra` GCP project — Breno — `CLAUDE.md`, D8.
-- `/admin`: topics not raw text, in-memory since instance start, token in Secret Manager — Breno — D20.
+- `/admin`: topics not raw text, in-memory since instance start, token in Secret Manager — Breno — D20. The guard sits on the data API, an agent amendment written in D20.
 - Testing and hardening session with a QA report and organized screenshots — Breno — D21.
+- No invented products or numbers "a todo custo", enforced by the server — Breno (goal), agent (mechanism) — D22.
 - ChatGPT was used for brainstorming and specs — Breno — `docs/ai-usage.md`.
 
 **Do not forget (lives only here or is easy to miss):**
-- **Benchmark (2026-10-31):** 0 blocker turns in 54 for all 3 models.
-  - Median latency: lite 1.85 s, 3.5-lite 1.62 s, 3.6-flash 6.66 s.
-  - Cost per turn (USD): 0.00167, 0.00224 and 0.00900 (baseline; after the S5.3 guards the lite models cost 0.00185 and 0.00241).
-  - Average input tokens per turn: about 6.1k (lite), mostly the tool schema and system prompt.
-- **Model shutdown:** `gemini-3.1-flash-lite` shuts down on 2027-05-07; `gemini-3.6-flash` prices double on 2027-01-01. Both belong in the PDF's cost section and the README limitations.
+- **Costs for the PDF:** US$ 0.00185 per answer on the delivered version (`evals/cost-model.md`); the first baseline was 0.00167. For 2,000 conversations × 4 turns: about US$ 14.81 Gemini + US$ 0.66 Cloud Run gross, about R$ 83,85 at PTAX 5.4212 (2026-10-30).
+- **Model shutdown and prices:** both go in the PDF and in the README limitations.
+  - `gemini-3.1-flash-lite` shuts down on 2027-05-07. Its replacement, `gemini-3.5-flash-lite`, had 0 blockers at US$ 0.00241 per turn.
+  - `gemini-3.6-flash` prices double on 2027-01-01.
 - **Retrieval limits:** paraphrases 4/6 and mixed coverage 8/9 ([evals](../evals/policy-retrieval.md)).
-- **Order 8's estimate (2026-02-28) is in the past:** answers must call it "a previsão registrada".
-- **gcloud:** `altivaserra` is the active `default` configuration. Always use `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio --project emporio-da-musica-agent`. The deploy command is in commit `37c5597`'s S4 history: `gcloud run deploy emporio-agent --source . --region southamerica-east1 --service-account emporio-agent-sa@emporio-da-musica-agent.iam.gserviceaccount.com --allow-unauthenticated --min-instances 0 --max-instances 1 --concurrency 20 --timeout 60 --memory 512Mi --set-secrets GEMINI_API_KEY=gemini-api-key:1 --set-env-vars GEMINI_MODEL=gemini-3.1-flash-lite,EXPOSE_TRACE=1,MAX_TURNS_PER_DAY=400 --labels app=emporio-agent,commit=<sha> --quiet`.
-- **Hosted health:** use `/health`; `/healthz` is reserved by Cloud Run (ERRORS class 3).
-- **Before every commit:** `git add`, then `.venv/bin/python scripts/check_staged.py` must print PASS. Run `scripts/mutation_check.py` after changing rules (30/30 now) and add a mutation for every new rule.
-- **Snapshot tests** read `_private_inputs/challenge`. The ZIP is in `_private_inputs/originals/`.
+- **Order 8's estimate (2026-02-28) is in the past:** answers call it "a previsão registrada".
+- **Times:** headless Chromium renders UTC unless `timezone_id` is set. Read times from `TZ=America/Sao_Paulo date` or from the commits (ERRORS class 2).
+- **gcloud:** `altivaserra` is the active `default` configuration. Always use `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio --project emporio-da-musica-agent`. Deploy command (now with the admin secret): `gcloud run deploy emporio-agent --project emporio-da-musica-agent --source . --region southamerica-east1 --service-account emporio-agent-sa@emporio-da-musica-agent.iam.gserviceaccount.com --allow-unauthenticated --min-instances 0 --max-instances 1 --concurrency 20 --timeout 60 --memory 512Mi --set-secrets GEMINI_API_KEY=gemini-api-key:1,ADMIN_TOKEN=admin-token:1 --set-env-vars GEMINI_MODEL=gemini-3.1-flash-lite,EXPOSE_TRACE=1,MAX_TURNS_PER_DAY=400 --labels app=emporio-agent,commit=<sha> --quiet`. After each deploy, run `scripts/qa_capture.py` on the URL.
+- **Hosted health:** use `/health` (`/healthz` is reserved by Cloud Run, ERRORS class 3). `HEAD /` answers 405.
+- **Before every commit:** `git add`, then `scripts/check_staged.py` must print PASS. It now handles binaries and lists the images to review by eye. Every new rule gets a mutation (58/58 now).
+- **Snapshot tests** read `_private_inputs/challenge`; the ZIP is in `_private_inputs/originals/`. Browser tests need `python -m playwright install chromium`.
+- **`.env`** now also holds `ADMIN_TOKEN`. Never print it; verify it by hash.
 
 **Depends on Breno:**
-- Nothing blocking S5–S7. Creating the `admin-token` secret (S6b) is covered by the S4 authorization for this project (no new billable product).
-- Before S8: he submits the PDF on Google Forms and replies to the e-mail; deploys already authorized for this project (S4). Ask again only for new billable resources.
+- Nothing blocks S8.1–S8.3.
+- At the end, he uploads the PDF to the Google Form and replies to the e-mail.
+- After the evaluation, he re-links `businesscardscanner-504717` to billing.
 
 **Risks of the next steps:**
-- A redeploy (S7) costs cents; billing and budget are in place.
-- Gemini calls in S6–S8 count against the R$ 30 budget; spend so far is a few cents.
-- The final capture (S8) must use the deployed revision and record its commit.
+- The capture must use the deployed revision and record its commit. A fix found by the review means redeploying and capturing again.
+- Gemini calls count against the R$ 30 budget (cents so far).
 
 **Before trusting this block, check:**
-- `git status --short` is empty and `git log -1 --format=%s` = `chore: checkpoint before compact (S5 benchmark done)`; `git rev-parse HEAD` = `git ls-remote origin refs/heads/main`.
-- `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio gcloud run services describe emporio-agent --project emporio-da-musica-agent --region southamerica-east1 --format='value(status.latestReadyRevisionName,metadata.labels.commit)'` → `emporio-agent-00002-8wx 37c5597`.
+- `git status --short` is empty and `git rev-parse HEAD` = `git ls-remote origin refs/heads/main`.
+- `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio gcloud run services describe emporio-agent --project emporio-da-musica-agent --region southamerica-east1 --format='value(status.latestReadyRevisionName,metadata.labels.commit)'` → `emporio-agent-00004-8vj 8589cff`.
 - `curl -s https://emporio-agent-669786539213.southamerica-east1.run.app/health` → `"status":"ok"`.
-- `.venv/bin/python -m pytest -q` → `97 passed`.
+- `.venv/bin/python -m pytest -q` → `152 passed`; `scripts/mutation_check.py` → `58/58`.
 
 ## Proofs
 
@@ -115,4 +129,9 @@ Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (ben
 | Suite + mutations after S6 | `pytest -q` · `mutation_check.py` | `121 passed` · `45/45 mutations caught` | 2026-10-31 |
 | Suite + mutations after S6b | `pytest -q` · `mutation_check.py` | `134 passed` · `50/50 mutations caught` | 2026-10-31 |
 | Upload set | `gcloud meta list-files-for-upload .` | 38 files; only `evals/pricing.json` from `evals/`; no tests, docs, scripts, `.env` or `_private_inputs` | 2026-10-31 |
+| Suite after S7 | `pytest -q` | `152 passed` (13 browser tests) | 2026-10-31 |
+| Mutation net after S7 | `mutation_check.py` | `58/58 mutations caught` | 2026-10-31 |
+| Second revision | `gcloud run services describe ...` | `emporio-agent-00004-8vj 8589cff` | 2026-10-31 |
+| Hosted QA | `scripts/qa_capture.py` | `12/12 hosted cases passed []` ([table](qa/hosted-results.md)) | 2026-10-31 |
+| Hosted hardening | curl on the URL | CSP/nosniff/no-referrer/DENY present; `/docs` `/openapi.json` 404; stats 404 without token; 20 KB body `413` | 2026-10-31 |
 | Importer | `.venv/bin/python scripts/import_snapshot.py` | `"dataset_id": "1412d32a6eeb"`, counts 9/65/25/50/20/22, `sellable_count` 61 | 2026-10-31 |

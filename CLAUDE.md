@@ -13,7 +13,7 @@ The project uses:
 - an HTML interface with the Ressonância brand;
 - a Cloud Run demo.
 
-State on 2026-10-31: setup and S1 (data, pricing, catalog SQL) done; the agent loop is next.
+State on 2026-10-31 17:40 São Paulo: S0–S7 done (agent, server-side guards D22, UI, `/admin`, QA report); revision `emporio-agent-00004-8vj` live. S8 (capture, README, PDF) is next. The deploy command (with `ADMIN_TOKEN`) is in `docs/PROGRESS.md`.
 
 ## Tie-breaking requirement
 
