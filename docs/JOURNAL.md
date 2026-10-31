@@ -2,6 +2,33 @@
 
 > One entry per session, newest first. Each entry covers what was done, what was decided and why, and what was learned. Entries before 2026-10-31 evening were written in Portuguese and translated here.
 
+## 2026-10-31 — S2–S4: agent, orders, policies and a live demo
+
+**Done.**
+- Built the Gemini tool loop with server-side checks of prices and claimed actions, the session and the public errors.
+- Bound orders to the session's demo profile, built the manual index and BM25 retrieval, and prepared hand-offs.
+- Deployed to Cloud Run.
+- Milestone 1 passes locally with both candidates and on the public URL.
+- Gates: 97 tests and 30/30 mutations.
+
+**Decided.**
+- Breno:
+  - authorized the deploy and a R$ 30 budget;
+  - unlinked `businesscardscanner-504717` to free a billing slot (D18);
+  - asked for the measured cost model in the PDF (D19).
+- Agent:
+  - added a process-wide daily turn cap, because the URL is public and the budget only alerts;
+  - kept the hosted health check at `/health`.
+
+**Found.**
+- The real model initially jumped to a complaint hand-off on an order question and said "com certeza" before asking the delivery date; two prompt rules fixed both.
+- `/healthz` is reserved on Cloud Run (ERRORS class 3).
+- Retrieval: paraphrases 4/6, mixed 8/9.
+
+**Not verified.** The benchmark and the cost model (S5); the browser UI at mobile widths (S6).
+
+**Next.** S5 benchmark with the official price list.
+
 ## 2026-10-31 — S1 and S-EN: deterministic core tested, repository switched to English
 
 **Done.**

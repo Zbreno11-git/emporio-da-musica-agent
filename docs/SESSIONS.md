@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 6 of 11 sessions closed** (S0, S0b, S1, S-EN, S2, S3). S4–S8 are next.
+**Progress: 7 of 11 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4). S5–S8 are next.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -97,7 +97,8 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
   - **✅ C5:** top 3 ≥ 10/12.
 - **3.4 [GEM]** Order 8 with profile A; shipping of exactly R$ 500 → `contact_store` + hand-off `prepared`.
 
-### S4 · First deploy (≈1.5 h) [URL]
+### ✅ S4 · First deploy (done 2026-10-31) [URL]
+- [x] Billing via D18, budget R$ 30, secret scoped to the service account, revision `emporio-agent-00002-8wx` from `37c5597`; `/health` 200, milestone 1 on the URL, 410 without a session. `/healthz` is reserved by Cloud Run (ERRORS class 3)
 - **Mandatory pause:** Breno confirms the billing link and budget at the time, because they cost money.
 - **4.1 Accounts.**
   - **Does:** with `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio`:

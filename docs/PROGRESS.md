@@ -4,9 +4,9 @@
 
 ## ▶️ RESUME HERE — 2026-10-31 (America/Campo_Grande)
 
-**State:** S0, S0b, S1, S-EN, S2 and S3 closed. Orders, policies and hand-offs work with real Gemini.
+**State:** S0–S4 closed. The demo is live at https://emporio-agent-669786539213.southamerica-east1.run.app, revision `emporio-agent-00002-8wx` (commit `37c5597`).
 
-**Exact next step:** S4 is the first deploy and starts with a **mandatory pause**: ask Breno to authorize linking billing to `emporio-da-musica-agent` and creating the BRL budget (≈ US$ 5) before any billable command. Meanwhile, the `Dockerfile` and `.gcloudignore` can be written offline.
+**Exact next step:** S5. Fetch the official Gemini price list for `gemini-3.1-flash-lite` and `gemini-3.5-flash`, write it to `evals/pricing.json` with source URL and date, then run `.venv/bin/python scripts/benchmark_models.py --models gemini-3.1-flash-lite gemini-3.5-flash --repeat 2`.
 
 **Checkpoints:**
 
@@ -19,7 +19,7 @@
 | C3 | Milestone 1 with real Gemini | ✅ (S2 commit) |
 | C4 | Orders bound to the session | ✅ (S3 commit) |
 | C5 | Policy retrieval ≥10/12 | ✅ 12/12 base (S3 commit) |
-| C6 | First Cloud Run revision | ⬜ |
+| C6 | First Cloud Run revision | ✅ rev `00002-8wx` / `37c5597` |
 | C7 | Benchmark pins `GEMINI_MODEL` | ⬜ |
 | C8 | UI at 320/390/desktop | ⬜ |
 | C9 | Playwright + failures, second revision | ⬜ |
@@ -27,7 +27,8 @@
 
 **Do not forget:**
 - **GCP:** gcloud has `altivaserra` as the active `default` configuration. This repo uses `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio` and the project `emporio-da-musica-agent`.
-- **Billing:** **not** linked yet (`billingEnabled=False`). Linking it and creating the BRL budget (≈ US$ 5) need Breno's confirmation in S4.
+- **Billing:** linked on 2026-10-31 after unlinking `businesscardscanner-504717` (D18). Budget `emporio-demo-cap` R$ 30 with 50/90/100% alerts. **Re-link `businesscardscanner-504717` when the demo is no longer needed.**
+- **Deploy command:** see the S4 commit message; always `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio`, `--set-secrets GEMINI_API_KEY=gemini-api-key:1`, `--max-instances 1`, label `commit=<sha>`.
 - **Gemini key:** belongs to `gen-lang-client-0041725501`, with active billing on the same account.
 - **Freeze:** Tue 2026-11-03 23:59 **São Paulo** time (UTC−3, one hour ahead of Campo Grande).
 - **Before every commit:** `git add`, then `.venv/bin/python scripts/check_staged.py` must print PASS.
@@ -50,4 +51,7 @@
 | Mutation net after S3 | `.venv/bin/python scripts/mutation_check.py` | `29/29 mutations caught` | 2026-10-31 |
 | Retrieval | `.venv/bin/python scripts/eval_retrieval.py` | `base top-3: 12/12 · paraphrase top-3: 4/6 · mixed coverage: 8/9 sections` | 2026-10-31 |
 | Real scenarios (order, hand-off, return) | `scripts/smoke_scenarios.py gemini-3.1-flash-lite` | next_action `choose_profile`, `clarify`, `contact_store`, `clarify`; no fallback ([jsonl](../evals/smoke/2026-10-31-s3-scenarios-gemini-3.1-flash-lite.jsonl)) | 2026-10-31 |
+| Hosted health | `curl $URL/health` | `{"status":"ok","dataset_id":"1412d32a6eeb","model":"gemini-3.1-flash-lite"}` 200 | 2026-10-31 |
+| Hosted milestone 1 | curl with a cookie jar on `$URL/api/chat` | `95 219900` (2305 ms), then `95 219900 208905 pix` (1917 ms) | 2026-10-31 |
+| Hosted no-session | `POST /api/chat` without a cookie | `410 session_expired` | 2026-10-31 |
 | Importer | `.venv/bin/python scripts/import_snapshot.py` | `"dataset_id": "1412d32a6eeb"`, counts 9/65/25/50/20/22, `sellable_count` 61 | 2026-10-31 |
