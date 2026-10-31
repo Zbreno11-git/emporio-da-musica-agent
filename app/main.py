@@ -135,13 +135,14 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
         response.set_cookie(COOKIE, sid, httponly=True, samesite="lax", secure=secure,
                             max_age=settings.session_ttl_s)
 
-    @app.get("/")
+    # Uptime checkers send HEAD; the page routes answer it like GET (no 405).
+    @app.api_route("/", methods=["GET", "HEAD"])
     def index():
         return FileResponse(STATIC / "index.html")
 
     # Cloud Run's front end reserves paths ending in "z", so the hosted check is /health; /healthz stays for local use.
-    @app.get("/health")
-    @app.get("/healthz")
+    @app.api_route("/health", methods=["GET", "HEAD"])
+    @app.api_route("/healthz", methods=["GET", "HEAD"])
     def healthz():
         try:
             manifest = json.loads((settings.data_dir / "manifest.json").read_text())
@@ -228,6 +229,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
                     known_products=session.known_products,
                     context_cents=session.shown_cents,
                     customer_id=session.customer_id,
+                    carried_policies=session.policies,
                     context_lines=_context_lines(session, settings.timezone),
                 )
             except ProviderUnavailable:
@@ -247,6 +249,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
 
             session.turns.append(result.contents)
             session.known_products.update(result.known_products)
+            session.policies = result.policy_results
             for card in result.cards:
                 session.shown_cents |= {v for k, v in card.items() if k.endswith("_cents") and v}
             response = ChatResponse(
@@ -263,7 +266,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     # /admin (D20): the page is an empty shell (a browser navigation cannot send a header, and a token in the URL
     # would land in request logs); the numbers need X-Admin-Token. A wrong or missing token, or no token configured,
     # gets the same 404 body as a route that does not exist.
-    @app.get("/admin")
+    @app.api_route("/admin", methods=["GET", "HEAD"])
     def admin_page():
         return FileResponse(STATIC / "admin.html", headers={"X-Robots-Tag": "noindex", "Cache-Control": "no-store"})
 

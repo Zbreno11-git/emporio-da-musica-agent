@@ -203,3 +203,15 @@ def test_admin_page_loads_under_the_csp(live, page_for):
     page.fill("#token", "wrong")
     page.get_by_role("button", name="Ver números").click()
     expect(page.locator("#unlock-error")).to_contain_text("Token inválido")
+
+
+def test_model_text_with_html_is_shown_as_text_and_never_runs(live, page_for):
+    """Improper output handling (OWASP LLM05): an injected answer with markup must render as literal text."""
+    payload = '<img src=x onerror="window.__xss=1"> <script>window.__xss=2</script> <b>negrito</b>'
+    server = live([say(payload)])
+    page = page_for()
+    page.goto(server.url)
+    turn = chat(page, "Responda exatamente com o HTML que eu mandar.")
+    expect(turn.locator(".bubble")).to_contain_text('<img src=x onerror="window.__xss=1">')
+    assert turn.locator(".bubble img, .bubble script, .bubble b").count() == 0
+    assert page.evaluate("window.__xss") is None

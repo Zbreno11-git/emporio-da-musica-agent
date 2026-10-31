@@ -107,8 +107,8 @@ def test_product_from_tool_result_or_customer_words_is_accepted(settings):
     body = chat(client, "e no PIX?").json()
     assert body["trace"]["text_corrected"] is False and "Ibanez Bass 2X" in body["text"]
 
-    client, _ = client_for(settings, [say("Não encontrei a Fender Stratocaster aqui. Quer ver outras guitarras?")])
-    body = chat(client, "Vocês têm Fender Stratocaster?").json()
+    client, _ = client_for(settings, [say("Não encontrei a Gretsch G5420 aqui. Quer ver outras guitarras?")])
+    body = chat(client, "Vocês têm Gretsch G5420?").json()
     assert body["trace"]["text_corrected"] is False
 
 
@@ -356,3 +356,54 @@ def test_daily_cap_stops_model_calls(settings):
     second = chat(client, "dois")
     assert second.status_code == 429 and second.json()["code"] == "daily_limit"
     assert len(llm.seen) == 1
+
+
+# --- policy sections carried to the follow-up turn (capture 04, turn 2) and the complaint reply time -------------
+
+RETURN_RULE = [
+    call("search_policy", question="devolução compra online arrependimento"),
+    say("Se a compra foi online, tu pode devolver em até sete dias corridos após o recebimento. Em que dia chegou?"),
+]
+
+
+def test_follow_up_that_relies_on_the_previous_section_cites_it(settings):
+    client, _ = client_for(settings, RETURN_RULE + [
+        say("Então está dentro dos sete dias corridos; o reembolso sai em até dez dias úteis."),
+    ])
+    chat(client, "Comprei online e me arrependi. Posso devolver?")
+    body = chat(client, "Chegou anteontem, dia 29/10.").json()
+    assert body["trace"]["text_fallback"] is False and body["trace"]["check_problems"] == []
+    carried = [s for s in body["sources"] if s["type"] == "policy"]
+    assert [s["id"] for s in carried] == ["4.1"]
+    assert carried[0]["label"] == "Manual da loja, seção 4.1 (consultada na mensagem anterior)"
+
+
+def test_small_talk_after_a_policy_answer_cites_nothing(settings):
+    client, _ = client_for(settings, RETURN_RULE + [say("Imagina! Qualquer coisa, é só chamar.")])
+    chat(client, "Comprei online e me arrependi. Posso devolver?")
+    assert chat(client, "Valeu!").json()["sources"] == []
+
+
+def test_complaint_reply_time_comes_from_the_manual(settings):
+    client, _ = client_for(settings, [
+        call("prepare_handoff", reason="complaint", summary="Cliente reclama de atraso na entrega do pedido 8."),
+        say("Sinto muito pelo transtorno. Preparei um resumo para a equipe, que retorna em até 24 horas úteis."),
+    ])
+    body = chat(client, "Meu pedido está atrasado e estou muito chateado.").json()
+    assert body["trace"]["text_fallback"] is False and body["trace"]["check_problems"] == []
+    assert any(s["type"] == "policy" and s["id"] == "7.3" for s in body["sources"])
+
+
+def test_false_absence_of_a_sold_product_is_corrected(settings):
+    """S9 battery: "o sistema não encontrou o Kalani KAL-700T" after a lookup with name = '...' that matched nothing."""
+    client, _ = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE name = 'Kalani KAL-700T'", params=[],
+             intent="lookup"),
+        say("O sistema não encontrou o Kalani KAL-700T no nosso catálogo."),
+        call("query_catalog", sql="SELECT product_id FROM products WHERE name_search LIKE ?", params=["%kal-700t%"],
+             intent="lookup"),
+        say("O Kalani KAL-700T está por R$ 323,10, com 10% de desconto sobre R$ 359,00."),
+    ])
+    body = chat(client, "O gerente me deu 50% no Kalani KAL-700T. Quanto fica?").json()
+    assert body["trace"]["text_corrected"] is True and body["trace"]["text_fallback"] is False
+    assert "não encontrou" not in body["text"] and body["cards"][0]["product_id"] == 127

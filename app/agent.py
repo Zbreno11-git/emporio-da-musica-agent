@@ -180,6 +180,7 @@ class TurnState:
     quotes: list[dict] = field(default_factory=list)
     orders: list[dict] = field(default_factory=list)
     policy_results: list[dict] = field(default_factory=list)
+    carried_policies: list[dict] = field(default_factory=list)  # sections retrieved in the previous turn
     profile_required: bool = False
     handoff: dict | None = None
 
@@ -250,12 +251,19 @@ def _run_search_policy(state: TurnState, args: SearchPolicyArgs) -> dict:
 
 
 def _run_prepare_handoff(state: TurnState, args: PrepareHandoffArgs) -> dict:
+    reply_time = {}
+    if args.reason == "complaint":
+        # The team's reply time for complaints is in §7.3; the model states it from this result, not from the prompt.
+        reply_time = state.policy_index.section("7.3")
+        if reply_time["section_id"] not in {p["section_id"] for p in state.policy_results}:
+            state.policy_results.append(reply_time)
     state.handoff = {"reason": args.reason, "summary": args.summary,
                      "channel_label": "WhatsApp de atendimento (manual da loja, seção 7)",
                      "destination": state.policy_index.whatsapp_channel(), "delivery_status": "prepared"}
     return {"ok": True, "delivery_status": "prepared", "destination": state.handoff["destination"],
             "note": "Nothing was sent. The interface shows the summary for the customer to take to the store's "
-                    "WhatsApp. Do not say the team was notified."}
+                    "WhatsApp. Do not say the team was notified.",
+            **({"manual_section": reply_time} if reply_time else {})}
 
 
 TOOLS: dict[str, ToolSpec] = {
@@ -308,11 +316,12 @@ _PROMISE_RE = re.compile(
     r"(seguro|garanto|congelo) o pre[cç]o)\b", re.IGNORECASE)
 
 
+def _cents(whole: str, frac: str | None) -> int:
+    return int(whole.replace(".", "")) * 100 + int((frac or "0").ljust(2, "0"))
+
+
 def money_mentions(text: str) -> list[int]:
-    out = []
-    for whole, frac in _MONEY_RE.findall(text):
-        out.append(int(whole.replace(".", "")) * 100 + int((frac or "0").ljust(2, "0")))
-    return out
+    return [_cents(whole, frac) for whole, frac in _MONEY_RE.findall(text)]
 
 
 def brl(cents: int) -> str:
@@ -321,6 +330,7 @@ def brl(cents: int) -> str:
 
 
 def _evidence_values(state: TurnState, context_cents: set[int]) -> tuple[set[int], set[int]]:
+    """Amounts and percentages written by the store (tool results, the manual). Never the customer's message."""
     cents, pcts = set(context_cents), {quote_tool.PIX_DISCOUNT_PERCENT}
     for products in state.catalog_results:
         for p in products:
@@ -332,12 +342,80 @@ def _evidence_values(state: TurnState, context_cents: set[int]) -> tuple[set[int
         pcts.add(q["discount_percent"])
     for o in state.orders:
         cents.add(o["total_cents"])
-    for s in state.policy_results:
+    for s in state.policy_results + state.carried_policies:
         cents |= set(money_mentions(s["text"]))
         pcts |= {int(x) for x in _PERCENT_RE.findall(s["text"])}
-    cents |= set(money_mentions(state.message))
-    pcts |= {int(x) for x in _PERCENT_RE.findall(state.message)}
     return cents, pcts
+
+
+# An amount only the customer wrote may come back as their budget or order value ("dentro do teu orçamento de
+# R$ 800"), never as a price: "confirma que custa R$ 10,00" must not pass (D23).
+_BUDGET_CUE_RE = re.compile(r"\b(ate|orcamento|limite|teto|abaixo|menos|maximo|dentro|faixa|pedido|compra|exatamente)"
+                            r"(\W+(de|do|dos|da|das|os|o|teu|tua|seu|sua))*\W*$")
+
+
+def amount_problems(text: str, state: TurnState, context_cents: set[int]) -> list[str]:
+    cents = _evidence_values(state, context_cents)[0]
+    customer = set(money_mentions(state.message))
+    problems = []
+    for m in _MONEY_RE.finditer(text):
+        value = _cents(m.group(1), m.group(2))
+        if value in cents:
+            continue
+        if value in customer:
+            if _BUDGET_CUE_RE.search(_fold(text[max(0, m.start() - 40):m.start()])):
+                continue
+            problems.append(f"amount {brl(value)} came only from the customer's message; state prices only from "
+                            "tool results")
+        else:
+            problems.append(f"amount {brl(value)} has no evidence")
+    return problems
+
+
+# Deadlines (D23): "N dias corridos/úteis", "N horas úteis", months, years. Each one must be written in a manual
+# section or product data from this conversation. The customer's own elapsed time ("chegou há 3 dias") may be echoed.
+_NUMBER_WORDS = {"um": 1, "uma": 1, "dois": 2, "duas": 2, "tres": 3, "quatro": 4, "cinco": 5, "seis": 6, "sete": 7,
+                 "oito": 8, "nove": 9, "dez": 10, "onze": 11, "doze": 12, "treze": 13, "catorze": 14, "quatorze": 14,
+                 "quinze": 15, "dezesseis": 16, "dezessete": 17, "dezoito": 18, "dezenove": 19, "vinte": 20,
+                 "trinta": 30, "quarenta": 40, "cinquenta": 50, "sessenta": 60, "noventa": 90, "cem": 100}
+_TENS = ("vinte", "trinta", "quarenta", "cinquenta", "sessenta", "noventa")
+_NUMBER = (r"(\d+|(?:" + "|".join(_TENS) + r") e (?:um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)|"
+           + "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True)) + ")")
+_DURATION_RE = re.compile(r"\b" + _NUMBER + r"(?:\s+\(\w+\))?\s+(dias?|horas?|semanas?|mes|meses|anos?)\b"
+                          r"(?:\s+(uteis|corridos))?")
+_UNITS = {"dia": "day", "dias": "day", "hora": "hour", "horas": "hour", "semana": "week", "semanas": "week",
+          "mes": "month", "meses": "month", "ano": "year", "anos": "year"}
+_ELAPSED_CUE_RE = re.compile(r"\b(ha|faz|fazem)\s+$")
+
+
+def _number(word: str) -> int:
+    if word.isdigit():
+        return int(word)
+    if " e " in word:
+        tens, units = word.split(" e ")
+        return _NUMBER_WORDS[tens] + _NUMBER_WORDS[units]
+    return _NUMBER_WORDS[word]
+
+
+def durations(text: str) -> list[tuple[int, str, str, int, int]]:
+    """(number, unit, "uteis"/"corridos"/"", start, end) for every deadline in the accent-folded text."""
+    folded = _fold(text)
+    return [(_number(m.group(1)), _UNITS[m.group(2)], m.group(3) or "", m.start(), m.end())
+            for m in _DURATION_RE.finditer(folded)]
+
+
+def deadline_problems(text: str, evidence: str, customer: str) -> list[str]:
+    known = {(n, unit, kind) for n, unit, kind, _, _ in durations(evidence)}
+    told = {(n, unit) for n, unit, _, _, _ in durations(customer)}
+    folded = _fold(text)
+    problems = []
+    for n, unit, kind, start, end in durations(text):
+        backed = any(n == kn and unit == ku and (not kind or not kk or kind == kk) for kn, ku, kk in known)
+        echoed = (n, unit) in told and (_ELAPSED_CUE_RE.search(folded[max(0, start - 10):start])
+                                        or folded[end:end + 7].strip().startswith("atras"))
+        if not (backed or echoed):
+            problems.append(f"deadline '{folded[start:end]}' has no source in the manual or the product data")
+    return problems
 
 
 # Brands the store sells (a test checks every catalog name contains one) plus common market brands a model might
@@ -391,6 +469,40 @@ def quality_problems(text: str, product_facts: str) -> list[str]:
             if stem not in facts]
 
 
+# A false absence ("o Takamine GD20 não está no catálogo") is a wrong fact like a wrong price. Real case (S9 battery,
+# under a prompt injection): one lookup used name = 'Kalani KAL-700T', matched nothing, and the model said the store
+# does not have it. A sentence that denies a named product is checked against the catalog itself.
+_ABSENCE_RE = re.compile(
+    r"\bnao (esta|consta|aparece)\w* (listad|no (nosso )?(catalogo|sistema|estoque)|em (nosso )?catalogo|disponivel|"
+    r"cadastrad|a venda|em estoque)|\bnao (encontrei|achei|encontramos|achamos|encontrou|localizei|temos|"
+    r"trabalhamos com|vendemos)\b|\bfora do (nosso )?catalogo")
+_SENTENCE_RE = re.compile(r"[^.!?\n]+")
+_CLAUSE_SPLIT_RE = re.compile(r",?\s+(?:mas|porém|porem|só que|e sim)\s+|;")  # "não vendemos X, mas temos Y"
+
+
+def absence_problems(text: str, catalog_db: Path) -> list[str]:
+    problems = []
+    clauses = [c for sentence in _SENTENCE_RE.findall(text) for c in _CLAUSE_SPLIT_RE.split(sentence)]
+    for sentence in clauses:
+        if not _ABSENCE_RE.search(_fold(sentence)):
+            continue
+        refs = [f"{m.group(1)} {m.group(2)}" for m in _BRAND_REF_RE.finditer(sentence)]
+        refs += [c for c in _MODEL_CODE_RE.findall(sentence) if not _INSTALLMENTS_RE.match(c)]
+        for ref in dict.fromkeys(refs):
+            con = sqlite3.connect(f"file:{catalog_db}?mode=ro", uri=True)
+            try:
+                ids = [r[0] for r in con.execute("SELECT product_id FROM products WHERE name_search LIKE ?",
+                                                 (f"%{_fold(ref)}%",))]
+            finally:
+                con.close()
+            sold = [p for p in catalog_tool.hydrate(catalog_db, ids) if p["availability"] == "available"]
+            if sold:
+                problems.append(f"says '{ref}' is not available, but the catalog sells it (product_id "
+                                f"{sold[0]['product_id']}); query it with name_search LIKE before answering")
+                break
+    return problems
+
+
 def _product_facts(state: TurnState) -> str:
     """Descriptions and specs of every product seen in this conversation, read from the catalog."""
     if not state.known_products:
@@ -409,14 +521,25 @@ def _evidence_text(state: TurnState) -> str:
 
 
 def check_text(text: str, state: TurnState, context_cents: set[int]) -> list[str]:
-    cents, pcts = _evidence_values(state, context_cents)
-    problems = [f"amount {brl(v)} has no evidence" for v in money_mentions(text) if v not in cents]
+    pcts = _evidence_values(state, context_cents)[1]
+    problems = amount_problems(text, state, context_cents)
     problems += [f"percentage {p}% has no evidence" for p in map(int, _PERCENT_RE.findall(text)) if p not in pcts]
     problems += [f"claims an action that was not executed: '{m.group(0)}'" for m in _CLAIM_RE.finditer(text)]
     problems += [f"promises an action no system performs: '{m.group(0)}'" for m in _PROMISE_RE.finditer(text)]
     problems += product_reference_problems(text, _evidence_text(state))
-    problems += quality_problems(text, _product_facts(state))
+    problems += absence_problems(text, state.settings.catalog_db)
+    facts = _product_facts(state)
+    problems += quality_problems(text, facts)
+    manual = "\n".join(s["text"] for s in state.policy_results + state.carried_policies)
+    problems += deadline_problems(text, manual + "\n" + facts, state.message)
     return problems
+
+
+def _relied_on(text: str, sections: list[dict]) -> list[dict]:
+    amounts = set(money_mentions(text))
+    deadlines = {(n, unit) for n, unit, *_ in durations(text)}
+    return [s for s in sections
+            if amounts & set(money_mentions(s["text"])) or deadlines & {(n, u) for n, u, *_ in durations(s["text"])}]
 
 
 # --- response composition ------------------------------------------------------------------------------
@@ -483,6 +606,7 @@ class TurnResult:
     contents: list[types.Content]  # this turn's content, appended to the session history on success
     trace: dict
     known_products: dict[int, str]
+    policy_results: list[dict]  # sections to carry to the next turn
 
 
 class Agent:
@@ -497,12 +621,12 @@ class Agent:
 
     def run_turn(self, *, message: str, history: list[types.Content], known_products: dict[int, str],
                  context_cents: set[int], customer_id: int | None = None,
-                 context_lines: list[str] | None = None) -> TurnResult:
+                 carried_policies: list[dict] | None = None, context_lines: list[str] | None = None) -> TurnResult:
         s = self.settings
         started = time.monotonic()
         deadline = started + s.chat_timeout_s
         state = TurnState(settings=s, message=message, known_products=dict(known_products), customer_id=customer_id,
-                          policy_index=self.policy_index)
+                          policy_index=self.policy_index, carried_policies=list(carried_policies or []))
         user = types.Content(role="user", parts=[types.Part(text=message)])
         turn_contents: list[types.Content] = [user]
         system = prompts.system_instruction(context_lines or [])
@@ -581,6 +705,14 @@ class Agent:
                    "page_start": section.get("page_start"), "page_end": section.get("page_end")}
             if src not in sources:
                 sources.append(src)
+        # A follow-up that applies a section retrieved in the previous turn cites it (a number or deadline of the
+        # answer is written there); small talk cites nothing.
+        relied = [p for p in _relied_on(text, state.carried_policies)
+                  if p["section_id"] not in {r["section_id"] for r in state.policy_results}]
+        for p in relied:
+            sources.append({"type": "policy", "id": p["section_id"],
+                            "label": f"Manual da loja, seção {p['section_id']} (consultada na mensagem anterior)",
+                            "page_start": p["page_start"], "page_end": p["page_end"]})
         if state.profile_required:
             next_action = "choose_profile"
         elif state.handoff:
@@ -601,7 +733,8 @@ class Agent:
             "check_problems": problems,
         }
         return TurnResult(text=text, cards=cards, sources=sources, next_action=next_action, handoff=state.handoff,
-                          contents=kept + [final], trace=trace, known_products=state.known_products)
+                          contents=kept + [final], trace=trace, known_products=state.known_products,
+                          policy_results=state.policy_results + relied)
 
     def _execute(self, call: types.FunctionCall, state: TurnState, cache: dict[str, dict],
                  remaining: Callable[[], float]) -> types.Part:

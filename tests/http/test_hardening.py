@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -64,3 +66,10 @@ def test_session_cookie_flags(settings):
     assert "httponly" in behind_https and "samesite=lax" in behind_https and "secure" in behind_https
     local = client.post("/api/session").headers["set-cookie"].lower()
     assert "httponly" in local and "secure" not in local
+
+
+@pytest.mark.parametrize("path", ["/", "/health", "/healthz", "/admin"])
+def test_head_is_answered_like_get(settings, path):
+    """Uptime checkers send HEAD; a 405 would read as the site being down."""
+    client = TestClient(create_app(settings, llm=FakeLLM([])))
+    assert client.head(path).status_code == 200

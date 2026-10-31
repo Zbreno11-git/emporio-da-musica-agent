@@ -36,6 +36,7 @@ class Session:
     turns: list[list[types.Content]] = field(default_factory=list)
     known_products: dict[int, str] = field(default_factory=dict)
     shown_cents: set[int] = field(default_factory=set)
+    policies: list[dict] = field(default_factory=list)  # manual sections of the last turn, carried to the next
     requests: "OrderedDict[str, CachedRequest]" = field(default_factory=OrderedDict)
     recent_turns: deque = field(default_factory=deque)
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -48,6 +49,7 @@ class Session:
         self.turns.clear()
         self.known_products.clear()
         self.shown_cents.clear()
+        self.policies = []
         self.requests.clear()
 
     def remember_request(self, request_id: str, entry: CachedRequest) -> None:

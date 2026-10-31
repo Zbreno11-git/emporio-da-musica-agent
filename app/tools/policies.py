@@ -97,12 +97,12 @@ class PolicyIndex:
             for rid in self.by_id[sid]["related_ids"]:
                 if rid not in ranked and rid not in related and self.by_id[rid]["text"]:
                     related.append(rid)
-        results = []
-        for sid in ranked + related[:max_related]:
-            s = self.by_id[sid]
-            results.append({"section_id": sid, "title": s["title"], "page_start": s["page_start"],
-                            "page_end": s["page_end"], "text": s["text"], "related": sid not in ranked})
-        return results
+        return [self.section(sid, related=sid not in ranked) for sid in ranked + related[:max_related]]
+
+    def section(self, sid: str, related: bool = False) -> dict:
+        s = self.by_id[sid]
+        return {"section_id": sid, "title": s["title"], "page_start": s["page_start"], "page_end": s["page_end"],
+                "text": s["text"], "related": related}
 
     def whatsapp_channel(self) -> str:
         """The hand-off destination comes from the manual (§7), never from code constants."""

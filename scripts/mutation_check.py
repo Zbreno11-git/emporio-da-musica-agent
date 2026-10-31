@@ -17,6 +17,7 @@ TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
 TPM = "tests/domain/test_product_mentions.py"
+TIG = "tests/domain/test_injection_guards.py"
 TA, MT = "tests/http/test_admin.py", "app/metrics.py"
 THD = "tests/http/test_hardening.py"
 AJ, TE = "app/static/app.js", "tests/e2e/test_flows.py"
@@ -59,7 +60,7 @@ MUTATIONS = [
      f"{TC}::test_discover_drops_unavailable_and_over_budget_even_if_sql_forgets"),
     (A, "    problems += [f\"claims an action that was not executed: '{m.group(0)}'\" for m in _CLAIM_RE.finditer(text)]",
      "    pass", f"{TH}::test_claimed_action_is_rejected"),
-    (A, '    problems = [f"amount {brl(v)} has no evidence" for v in money_mentions(text) if v not in cents]',
+    (A, "    problems = amount_problems(text, state, context_cents)",
      "    problems = []", f"{TH}::test_wrong_price_in_text_is_corrected_then_falls_back"),
     (A, "    if args.product_id not in state.known_products:", "    if False:",
      f"{TH}::test_wrong_price_in_text_is_corrected_then_falls_back"),
@@ -132,7 +133,7 @@ MUTATIONS = [
      f"{TE}::test_daily_limit_keeps_the_draft_and_offers_no_useless_retry"),
     (AJ, '  if (body.next_action === "choose_profile") {', "  if (true) {",
      f"{TE}::test_takamine_then_pix_cards_match_the_api"),
-    (A, "    problems += quality_problems(text, _product_facts(state))\n", "",
+    (A, "    problems += quality_problems(text, facts)\n", "",
      f"{TH}::test_unsupported_sound_quality_is_never_shown"),
     (A, "    facts = _fold(product_facts)", "    facts = product_facts.lower()",
      f"{TPM}::test_quality_backed_by_the_description_passes_with_accents_folded"),
@@ -142,6 +143,41 @@ MUTATIONS = [
      f"{TCM}::test_monthly_projection_is_mean_times_turns_times_conversations"),
     (CM, '                + min(gib_s, free["gib_seconds"]) * free["tier1_gib_second_usd"]',
      '                + gib_s * free["tier1_gib_second_usd"]', f"{TCM}::test_cloud_run_gross_and_free_tier"),
+    # D23: the customer's message is never evidence for a store fact (ERRORS class 5)
+    (A, "    return cents, pcts\n",
+     "    cents |= set(money_mentions(state.message))\n    pcts |= {int(x) for x in _PERCENT_RE.findall(state.message)}\n"
+     "    return cents, pcts\n", f"{TIG}::test_a_percentage_the_customer_typed_is_not_evidence"),
+    (A, "            if _BUDGET_CUE_RE.search(_fold(text[max(0, m.start() - 40):m.start()])):",
+     "            if True:", f"{TIG}::test_an_amount_the_customer_typed_cannot_be_stated_as_a_price"),
+    (A, "    problems += deadline_problems(text, manual + \"\\n\" + facts, state.message)\n", "",
+     f"{TIG}::test_a_deadline_the_customer_proposes_is_not_evidence"),
+    (A, "    known = {(n, unit, kind) for n, unit, kind, _, _ in durations(evidence)}",
+     "    known = {(n, unit, kind) for n, unit, kind, _, _ in durations(evidence + customer)}",
+     f"{TIG}::test_a_deadline_the_customer_proposes_is_not_evidence"),
+    (A, "        backed = any(n == kn and unit == ku and (not kind or not kk or kind == kk) for kn, ku, kk in known)",
+     "        backed = any(n == kn and unit == ku for kn, ku, kk in known)",
+     f"{TIG}::test_the_wrong_kind_of_days_is_flagged"),
+    (M, "                    carried_policies=session.policies,\n", "",
+     f"{TH}::test_follow_up_that_relies_on_the_previous_section_cites_it"),
+    (A, "            if amounts & set(money_mentions(s[\"text\"])) or deadlines & {(n, u) for n, u, *_ in durations(s[\"text\"])}]",
+     "            if True]", f"{TH}::test_small_talk_after_a_policy_answer_cites_nothing"),
+    (A, "    if args.reason == \"complaint\":", "    if False:",
+     f"{TH}::test_complaint_reply_time_comes_from_the_manual"),
+    (M, '    @app.api_route("/health", methods=["GET", "HEAD"])', '    @app.get("/health")',
+     f"{THD}::test_head_is_answered_like_get"),
+    (AJ, "    node.append(child instanceof Node ? child : String(child));",
+     "    if (child instanceof Node) node.append(child); else node.insertAdjacentHTML(\"beforeend\", String(child));",
+     f"{TE}::test_model_text_with_html_is_shown_as_text_and_never_runs"),
+    (B, '        (blockers if step.turn_type == "handoff" else quality).append(',
+     "        quality.append(", "tests/evals/test_benchmark_checks.py::test_policy_gap_without_handoff_is_a_blocker"),
+    (A, "    problems += absence_problems(text, state.settings.catalog_db)\n", "",
+     f"{TH}::test_false_absence_of_a_sold_product_is_corrected"),
+    (A, "    clauses = [c for sentence in _SENTENCE_RE.findall(text) for c in _CLAUSE_SPLIT_RE.split(sentence)]",
+     "    clauses = _SENTENCE_RE.findall(text)", f"{TIG}::test_a_denial_followed_by_but_does_not_cover_the_product"),
+    (A, '            sold = [p for p in catalog_tool.hydrate(catalog_db, ids) if p["availability"] == "available"]',
+     "            sold = catalog_tool.hydrate(catalog_db, ids)", f"{TIG}::test_true_absences_and_ordinary_sentences_pass"),
+    (B, "        blockers += absence_problems(text, catalog_db)\n", "        pass\n",
+     "tests/evals/test_benchmark_checks.py::test_false_absence_of_a_sold_product_is_a_blocker"),
 ]
 
 
