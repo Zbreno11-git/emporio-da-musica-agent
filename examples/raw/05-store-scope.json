@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
+    "revision": "emporio-agent-00006-z4v",
+    "commit": "0756d26",
+    "model": "gemini-3.1-flash-lite",
+    "dataset_id": "1412d32a6eeb",
+    "screenshot": "screens/05-store-scope-390.png",
+    "captured": "2026-10-31 17:48"
+  },
+  "turns": [
+    {
+      "message": "Vocês vendem amplificador? Se não, podem me indicar um baixo?",
+      "request_id": "91fdc6ef-8e60-47f3-aa2c-f6e5e3c8df4c",
+      "text": "Nós não trabalhamos com amplificadores, apenas com os instrumentos musicais em si. Como você pediu, aqui estão algumas opções de baixos que temos disponíveis agora:",
+      "cards": [
+        {
+          "product_id": 135,
+          "name": "Music Man Bass 1X Electric Bass",
+          "attribute": "4 cordas",
+          "availability": "available",
+          "base_cents": 873200,
+          "offer_cents": 873200,
+          "discount_percent": 0
+        },
+        {
+          "product_id": 137,
+          "name": "Yamaha Bass 3X Electric Bass",
+          "attribute": "4 cordas",
+          "availability": "available",
+          "base_cents": 1144500,
+          "offer_cents": 1144500,
+          "discount_percent": 0
+        },
+        {
+          "product_id": 138,
+          "name": "Music Man Bass 4X Electric Bass",
+          "attribute": "4 cordas",
+          "availability": "available",
+          "base_cents": 715700,
+          "offer_cents": 715700,
+          "discount_percent": 0
+        }
+      ],
+      "sources": [
+        {
+          "type": "catalog",
+          "id": "product:135",
+          "label": "Catálogo da loja"
+        },
+        {
+          "type": "catalog",
+          "id": "product:137",
+          "label": "Catálogo da loja"
+        },
+        {
+          "type": "catalog",
+          "id": "product:138",
+          "label": "Catálogo da loja"
+        }
+      ],
+      "next_action": "none",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 2073,
+        "model_calls": 2,
+        "tool_rounds": 1,
+        "tools": [
+          {
+            "name": "query_catalog",
+            "args": {
+              "sql": "SELECT product_id FROM products WHERE category_id = 2 AND availability = 'available' LIMIT 3",
+              "intent": "discover"
+            },
+            "ok": true,
+            "ms": 1
+          }
+        ],
+        "usage": {
+          "input": 6348,
+          "output": 78,
+          "thoughts": 0,
+          "total": 6426
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 2.4,
+      "seconds": 2.4
+    }
+  ],
+  "checks": [
+    [
+      "turn 1: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 1: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "says amplifiers are not sold and shows available basses from the catalog",
+      true
+    ]
+  ]
+}

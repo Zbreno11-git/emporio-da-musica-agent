@@ -1,0 +1,122 @@
+{
+  "meta": {
+    "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
+    "revision": "emporio-agent-00006-z4v",
+    "commit": "0756d26",
+    "model": "gemini-3.1-flash-lite",
+    "dataset_id": "1412d32a6eeb",
+    "screenshot": "screens/04-return-policy-390.png",
+    "captured": "2026-10-31 17:48"
+  },
+  "turns": [
+    {
+      "message": "Comprei online e me arrependi. Posso devolver?",
+      "request_id": "1f42c1cf-e6f4-4ced-b324-f4edc397e49b",
+      "text": "Para compras online, a política da loja permite a solicitação de devolução em até sete dias corridos após o recebimento do instrumento, desde que ele esteja na embalagem original e sem sinais de uso. Como você já confirmou que a compra foi online, em que dia o produto chegou para você?",
+      "cards": [],
+      "sources": [
+        {
+          "type": "policy",
+          "id": "4.1",
+          "label": "Manual da loja, seção 4.1",
+          "page_start": 4,
+          "page_end": 4
+        },
+        {
+          "type": "policy",
+          "id": "4",
+          "label": "Manual da loja, seção 4",
+          "page_start": 4,
+          "page_end": 4
+        },
+        {
+          "type": "policy",
+          "id": "3",
+          "label": "Manual da loja, seção 3",
+          "page_start": 3,
+          "page_end": 3
+        }
+      ],
+      "next_action": "clarify",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 2021,
+        "model_calls": 2,
+        "tool_rounds": 1,
+        "tools": [
+          {
+            "name": "search_policy",
+            "args": {
+              "question": "devolução compra online arrependimento"
+            },
+            "ok": true,
+            "ms": 0
+          }
+        ],
+        "usage": {
+          "input": 6549,
+          "output": 85,
+          "thoughts": 0,
+          "total": 6634
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 2.27,
+      "seconds": 2.27
+    },
+    {
+      "message": "Chegou anteontem, dia 29/10.",
+      "request_id": "45811bea-8739-4d15-9b2d-dae2af76e36a",
+      "text": "Perfeito, você está dentro do prazo de sete dias corridos após o recebimento. Como a loja arca com o frete de devolução e o reembolso é feito na forma de pagamento original em até dez dias úteis, nossa equipe pode te ajudar com esse processo. Posso preparar um resumo para eles com o teu caso?",
+      "cards": [],
+      "sources": [],
+      "next_action": "clarify",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 1118,
+        "model_calls": 1,
+        "tool_rounds": 0,
+        "tools": [],
+        "usage": {
+          "input": 3720,
+          "output": 68,
+          "thoughts": 0,
+          "total": 3788
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 1.36,
+      "seconds": 1.36
+    }
+  ],
+  "checks": [
+    [
+      "turn 1: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 1: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "turn 2: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 2: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "first answer asks the missing fact (clarify) citing §4.1",
+      true
+    ],
+    [
+      "second answer applies §4.1 (retrieved in this or the previous turn) without asking the date again",
+      true
+    ]
+  ]
+}

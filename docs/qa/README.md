@@ -1,13 +1,13 @@
 # QA report: testing and hardening (D21)
 
-Written for the evaluators. It records what was clicked, what was expected, what was observed and what was **not** verified. Run on 2026-10-31 against revision `emporio-agent-00004-8vj` (commit `8589cff`) of https://emporio-agent-669786539213.southamerica-east1.run.app.
+Written for the evaluators. It records what was clicked, what was expected, what was observed and what was **not** verified. Run on 2026-10-31 against revision `emporio-agent-00006-z4v` (commit `0756d26`) of https://emporio-agent-669786539213.southamerica-east1.run.app.
 
 ## Summary
 
 | Layer | How | Result (literal) |
 | --- | --- | --- |
-| Unit, tool and HTTP tests | `.venv/bin/python -m pytest -q` (scripted fake model, no API key) | `152 passed` (includes the 13 browser tests below) |
-| Mutation net | `.venv/bin/python scripts/mutation_check.py`: 58 deliberate defects, each must break a named test | `58/58 mutations caught` |
+| Unit, tool and HTTP tests | `.venv/bin/python -m pytest -q` (scripted fake model, no API key) | `156 passed` (includes the 13 browser tests below) |
+| Mutation net | `.venv/bin/python scripts/mutation_check.py`: 60 deliberate defects, each must break a named test | `60/60 mutations caught` |
 | Browser, forced failures | `tests/e2e/` (Chromium + real server + scripted fake model) | `13 passed` |
 | Browser, real model, hosted | `.venv/bin/python scripts/qa_capture.py` (real Gemini on the URL) | `12/12 hosted cases passed` ([generated table](hosted-results.md)) |
 | Model battery | `scripts/benchmark_models.py` (real Gemini, automatic blocker checks) | 0 blocker turns in every run since the S5.3 guards ([report](../../evals/model-benchmark.md)) |
@@ -31,7 +31,7 @@ Every case below drives the deployed page in Chromium, reads the API response th
 | 11 | Shipping for exactly R$ 500 | Explains the known rule, hand-off `prepared`, marked "Ainda não foi enviado" | pass | [11](screens/11-handoff-390.png) |
 | 12 | `/admin` after the run | Average cost per answer, topics and top 3 products; no customer text | pass | [12](screens/12-admin-1280.png) |
 
-The first hosted run (revision `00003-7w6`) passed 11 of 12. Case 10 failed: the model asked for preferences instead of searching. The prompt was changed to search first, the change was measured (10/10 runs), and the fix was redeployed as `00004-8vj`, which passed 12 of 12.
+The first hosted run (revision `00003-7w6`) passed 11 of 12. Case 10 failed: the model asked for preferences instead of searching. The prompt was changed to search first, the change was measured (10/10 runs), and the fix was redeployed as `00004-8vj`, which passed 12 of 12. The current revision `00006-z4v` (two later prompt fixes and the quality guard, D22) passed 12 of 12 again.
 
 ## 2. Forced failures and limits (local browser, scripted fake model)
 
@@ -50,7 +50,7 @@ These cases cannot be produced on demand with the real provider, so they run in 
 
 HTTP-level failure tests ([`tests/http/`](../../tests/http/)) also cover a resend with the same `request_id` (same answer, no new model call), a concurrent turn (409), a request id reused with another message (409), a profile switch during a turn (409, discarded), invalid input (422) and a foreign origin (403).
 
-## 3. Hardening (checked on the hosted URL, revision `00004-8vj`)
+## 3. Hardening (checked on the hosted URL, revision `00004-8vj`; the hardening code is unchanged in `00006-z4v`)
 
 | Check | Command | Observed |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ HTTP-level failure tests ([`tests/http/`](../../tests/http/)) also cover a resen
 
 ## 4. Observations and what was not verified
 
-**Observations (not blockers, carried to the S8 review):**
+**Observations (not blockers). The first two were fixed in the prompt in `6ca688f` and measured (3/3 runs):**
 - In the hosted return case, the answer opened with "Pode sim!" before knowing the delivery date. The rule and the question that follow are correct (`clarify`), but the opening anticipates eligibility.
 - Local runs sometimes opened the PIX answer with "Como te falei" when the PIX price had only appeared on the first card.
 - `HEAD /` answers 405 (only GET is routed). Uptime checks should use `GET /health`.
@@ -76,7 +76,7 @@ HTTP-level failure tests ([`tests/http/`](../../tests/http/)) also cover a resen
 - **Losing in-memory sessions** when Cloud Run recycles the instance. The client path (410 → new session) is tested, but no real recycle was forced.
 - **Real phones and assistive technology.** Only emulated viewports (320/390/1280) were used. No real mobile keyboard, no screen reader; roles, labels and `aria-live` are present.
 - **Clipboard** copying was checked in Chromium only.
-- **Free-text product characteristics.** The server checks prices, percentages, product names, model codes, and claimed or promised actions. Characteristics such as "tampo em cedro" are governed by the prompt and the S8 review (D22).
+- **Free-text product characteristics outside the quality list.** The server checks prices, percentages, product names, model codes, claimed or promised actions, and sound/build qualities (timbre, encorpado, projeção, resistente, ...) against the product data (D22). Other wording is governed by the prompt and the S8 review.
 
 ## How to reproduce
 

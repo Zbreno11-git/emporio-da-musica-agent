@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
+    "revision": "emporio-agent-00006-z4v",
+    "commit": "0756d26",
+    "model": "gemini-3.1-flash-lite",
+    "dataset_id": "1412d32a6eeb",
+    "screenshot": "screens/02-promotion-pix-390.png",
+    "captured": "2026-10-31 17:48"
+  },
+  "turns": [
+    {
+      "message": "Quanto fica o Kalani KAL-700T no PIX?",
+      "request_id": "e3695df8-b800-417c-9a82-799fdd435867",
+      "text": "O Kalani KAL-700T está com uma promoção de 10% de desconto, saindo de R$ 359,00 por R$ 323,10. Esse valor de R$ 323,10 é o mesmo aplicado para pagamentos via PIX, já que nossas promoções não são cumulativas.",
+      "cards": [
+        {
+          "product_id": 127,
+          "name": "Kalani KAL-700T Tenor Natural",
+          "attribute": "Ukulele tenor",
+          "availability": "available",
+          "base_cents": 35900,
+          "offer_cents": 32310,
+          "discount_percent": 10,
+          "payment_cents": 32310,
+          "payment_method": "pix"
+        }
+      ],
+      "sources": [
+        {
+          "type": "catalog",
+          "id": "product:127",
+          "label": "Catálogo da loja"
+        },
+        {
+          "type": "policy",
+          "id": "3",
+          "label": "Manual da loja, seção 3",
+          "page_start": 3,
+          "page_end": 3
+        },
+        {
+          "type": "policy",
+          "id": "6.2",
+          "label": "Manual da loja, seção 6.2",
+          "page_start": 6,
+          "page_end": 6
+        }
+      ],
+      "next_action": "none",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 2977,
+        "model_calls": 3,
+        "tool_rounds": 2,
+        "tools": [
+          {
+            "name": "query_catalog",
+            "args": {
+              "intent": "lookup",
+              "sql": "SELECT product_id FROM products WHERE name_search LIKE '%kalani kal-700t%'"
+            },
+            "ok": true,
+            "ms": 1
+          },
+          {
+            "name": "quote_product",
+            "args": {
+              "method": "pix",
+              "product_id": 127
+            },
+            "ok": true,
+            "ms": 0
+          }
+        ],
+        "usage": {
+          "input": 9395,
+          "output": 143,
+          "thoughts": 0,
+          "total": 9538
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 3.31,
+      "seconds": 3.31
+    }
+  ],
+  "checks": [
+    [
+      "turn 1: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 1: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "card: product 127, list 35900, 10%, PIX 32310",
+      true
+    ],
+    [
+      "text states R$ 359,00, 10% and R$ 323,10 together; never R$ 306,95",
+      true
+    ]
+  ]
+}

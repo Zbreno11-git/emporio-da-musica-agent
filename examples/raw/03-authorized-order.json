@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
+    "revision": "emporio-agent-00006-z4v",
+    "commit": "0756d26",
+    "model": "gemini-3.1-flash-lite",
+    "dataset_id": "1412d32a6eeb",
+    "screenshot": "screens/03-authorized-order-390.png",
+    "captured": "2026-10-31 17:48"
+  },
+  "turns": [
+    {
+      "message": "Onde está o meu pedido 8?",
+      "request_id": "26f644a7-61b5-4e97-b840-e2cd58787e03",
+      "text": "Para eu consultar o status do teu pedido, preciso que tu selecione um dos perfis de demonstração aqui na nossa interface. Assim que você fizer isso, consigo verificar as informações desse pedido 8 para ti!",
+      "cards": [],
+      "sources": [],
+      "next_action": "choose_profile",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 1946,
+        "model_calls": 2,
+        "tool_rounds": 1,
+        "tools": [
+          {
+            "name": "get_my_order",
+            "args": {
+              "order_id": 8
+            },
+            "ok": false,
+            "ms": 0
+          }
+        ],
+        "usage": {
+          "input": 5864,
+          "output": 61,
+          "thoughts": 0,
+          "total": 5925
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 2.3,
+      "seconds": 2.3
+    },
+    {
+      "message": "Onde está o meu pedido 8?",
+      "profile": "Cliente A · pedido em transporte",
+      "request_id": "07da1098-abd0-46e5-be18-9f29f4b18df6",
+      "text": "O teu pedido número 8, contendo um ukulele Kala KA-C Concert Mogno, foi enviado e o código de rastreamento é BRJL5544332BR. A previsão registrada para a entrega era 28 de fevereiro de 2026, então, como o prazo já passou, posso preparar um resumo para a nossa equipe verificar o que houve, se você quiser.",
+      "cards": [],
+      "sources": [
+        {
+          "type": "order",
+          "id": "order:8",
+          "label": "Pedido 8"
+        }
+      ],
+      "next_action": "none",
+      "trace": {
+        "model": "gemini-3.1-flash-lite",
+        "duration_ms": 2020,
+        "model_calls": 2,
+        "tool_rounds": 1,
+        "tools": [
+          {
+            "name": "get_my_order",
+            "args": {
+              "order_id": 8
+            },
+            "ok": true,
+            "ms": 0
+          }
+        ],
+        "usage": {
+          "input": 5958,
+          "output": 102,
+          "thoughts": 0,
+          "total": 6060
+        },
+        "text_corrected": false,
+        "text_fallback": false,
+        "check_problems": []
+      },
+      "_seconds": 2.26,
+      "seconds": 2.26
+    }
+  ],
+  "checks": [
+    [
+      "turn 1: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 1: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "turn 2: no claimed or promised action",
+      true
+    ],
+    [
+      "turn 2: not rewritten by the server fallback",
+      true
+    ],
+    [
+      "visitor gets the profile picker and no order data",
+      true
+    ],
+    [
+      "profile A gets status, tracking BRJL5544332BR and 'previsão registrada'",
+      true
+    ]
+  ]
+}
