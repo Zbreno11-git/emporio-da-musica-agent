@@ -181,6 +181,7 @@ class TurnState:
     orders: list[dict] = field(default_factory=list)
     policy_results: list[dict] = field(default_factory=list)
     carried_policies: list[dict] = field(default_factory=list)  # sections retrieved in the previous turn
+    context_cents: set[int] = field(default_factory=set)  # values already shown in this session (cards)
     profile_required: bool = False
     handoff: dict | None = None
 
@@ -251,6 +252,13 @@ def _run_search_policy(state: TurnState, args: SearchPolicyArgs) -> dict:
 
 
 def _run_prepare_handoff(state: TurnState, args: PrepareHandoffArgs) -> dict:
+    # The customer carries the summary to the store team, so it passes the same checks as the shown text: an injected
+    # "gerente autorizou 50%" must not reach the team as if the assistant had confirmed it (D23).
+    problems = check_text(args.summary, state, state.context_cents)
+    if problems:
+        return {"ok": False, "error": "summary_unsupported",
+                "message": "The summary states facts without evidence: " + "; ".join(problems)
+                           + ". Rewrite it with only facts from the tool results, or describe the customer's request."}
     reply_time = {}
     if args.reason == "complaint":
         # The team's reply time for complaints is in §7.3; the model states it from this result, not from the prompt.
@@ -626,7 +634,8 @@ class Agent:
         started = time.monotonic()
         deadline = started + s.chat_timeout_s
         state = TurnState(settings=s, message=message, known_products=dict(known_products), customer_id=customer_id,
-                          policy_index=self.policy_index, carried_policies=list(carried_policies or []))
+                          policy_index=self.policy_index, carried_policies=list(carried_policies or []),
+                          context_cents=set(context_cents))
         user = types.Content(role="user", parts=[types.Part(text=message)])
         turn_contents: list[types.Content] = [user]
         system = prompts.system_instruction(context_lines or [])

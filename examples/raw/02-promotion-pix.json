@@ -1,18 +1,18 @@
 {
   "meta": {
     "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
-    "revision": "emporio-agent-00006-z4v",
-    "commit": "0756d26",
+    "revision": "emporio-agent-00007-tgf",
+    "commit": "415b4c8",
     "model": "gemini-3.1-flash-lite",
     "dataset_id": "1412d32a6eeb",
     "screenshot": "screens/02-promotion-pix-390.png",
-    "captured": "2026-10-31 17:48"
+    "captured": "2026-10-31 18:27"
   },
   "turns": [
     {
       "message": "Quanto fica o Kalani KAL-700T no PIX?",
-      "request_id": "e3695df8-b800-417c-9a82-799fdd435867",
-      "text": "O Kalani KAL-700T está com uma promoção de 10% de desconto, saindo de R$ 359,00 por R$ 323,10. Esse valor de R$ 323,10 é o mesmo aplicado para pagamentos via PIX, já que nossas promoções não são cumulativas.",
+      "request_id": "10b5d0a0-5c3f-4bc9-b0b5-bf341667928e",
+      "text": "O Kalani KAL-700T está com uma promoção de 10% de desconto, saindo de R$ 359,00 por R$ 323,10. Como as promoções não acumulam, esse valor de R$ 323,10 é o mesmo aplicado para pagamentos via PIX.",
       "cards": [
         {
           "product_id": 127,
@@ -50,7 +50,7 @@
       "next_action": "none",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 2977,
+        "duration_ms": 3076,
         "model_calls": 3,
         "tool_rounds": 2,
         "tools": [
@@ -61,30 +61,30 @@
               "sql": "SELECT product_id FROM products WHERE name_search LIKE '%kalani kal-700t%'"
             },
             "ok": true,
-            "ms": 1
+            "ms": 0
           },
           {
             "name": "quote_product",
             "args": {
-              "method": "pix",
-              "product_id": 127
+              "product_id": 127,
+              "method": "pix"
             },
             "ok": true,
             "ms": 0
           }
         ],
         "usage": {
-          "input": 9395,
-          "output": 143,
+          "input": 9893,
+          "output": 141,
           "thoughts": 0,
-          "total": 9538
+          "total": 10034
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 3.31,
-      "seconds": 3.31
+      "_seconds": 3.47,
+      "seconds": 3.47
     }
   ],
   "checks": [

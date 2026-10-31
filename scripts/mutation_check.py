@@ -178,6 +178,8 @@ MUTATIONS = [
      "            sold = catalog_tool.hydrate(catalog_db, ids)", f"{TIG}::test_true_absences_and_ordinary_sentences_pass"),
     (B, "        blockers += absence_problems(text, catalog_db)\n", "        pass\n",
      "tests/evals/test_benchmark_checks.py::test_false_absence_of_a_sold_product_is_a_blocker"),
+    (A, "    problems = check_text(args.summary, state, state.context_cents)\n", "    problems = []\n",
+     f"{TH}::test_handoff_summary_with_an_unsupported_fact_is_refused"),
 ]
 
 
