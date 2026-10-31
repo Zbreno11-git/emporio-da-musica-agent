@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 10 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3). Next: S6, S6b, S7, S8.
+**Progress: 11 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3, S6). Next: S6b, S7, S8.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -192,7 +192,9 @@ If the work runs late, cut in this order (unchanged):
 - If lite still skips the tool → a server-side text check in `check_text`: a catalog product name in the text without a card counts as unsupported, with one correction and then the fallback.
 - That check becomes a new mutation.
 
-### S6 · Ressonância UI (≈2.5 h) [OFF + GEM] → C8
+### ✅ S6 · Ressonância UI (done 2026-10-31) [OFF + GEM] → C8
+- [x] `index.html` + `app.css` + `app.js` + pure `format.js` (8 node tests, 3 mutations), local OFL fonts, vector symbol; checked at 320/390/1280 with real Gemini; order flow visitor → B → A. Found and fixed on screen: an invented "à vista" label for table-price quotes, default paragraph margins, the profile control wrapping at 320 px, the last turn hidden behind the composer
+
 **Read first:** `/frontend-design`, `frontend-e-ux`, the full guide 01 (§4 tokens, §5 conversation anatomy, §7 acceptance list), and the mockup `_private_inputs/guides/01-branding/assets/ui-opcao-1-emporio_mockup.png`.
 
 **Does:** split `app/static/` into `index.html` + `app.css` + `app.js`, with no inline script so that S7's CSP can forbid it.

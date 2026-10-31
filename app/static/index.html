@@ -4,45 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Empório da Música · Atendimento</title>
-<!-- Minimal page for milestone 1. The Ressonância interface replaces it in session S6. -->
-<style>
-  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #faf6ec; color: #242825; }
-  main { max-width: 46rem; margin: 0 auto; padding: 1rem; }
-  .turn { margin: .75rem 0; } .user { text-align: right; }
-  .card { border: 1px solid #d4cfc2; border-radius: .75rem; padding: .5rem .75rem; margin: .25rem 0; background: #fffdf8; }
-  .price { color: #984b2c; font-weight: 700; }
-  form { display: flex; gap: .5rem; } input { flex: 1; padding: .6rem; } button { background: #173d33; color: #faf6ec; border: 0; padding: 0 1rem; border-radius: .5rem; }
-</style>
+<meta name="description" content="Atendimento da Empório da Música: instrumentos, preços, pedidos e regras da loja.">
+<link rel="icon" href="/static/symbol.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/source-sans-3-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+<script type="module" src="/static/app.js"></script>
 </head>
 <body>
-<main>
-  <h1>Empório da Música</h1>
-  <div id="log" aria-live="polite"></div>
-  <form id="f"><input id="m" autocomplete="off" placeholder="Escreva sua mensagem..." required maxlength="2000"><button>Enviar</button></form>
+<!-- Layout follows _private_inputs/visual-references/ui-opcao-1-emporio_mockup.png (guide 01, option 1), with two
+     intended differences: one avatar per agent turn instead of one per card (guide 01 §5 and the project rules),
+     and the catalog thumbnail redrawn as /static/symbol.svg (the guide's raster file is a private input). -->
+<header class="brand-header">
+  <div class="brand">
+    <img src="/static/symbol.svg" alt="" width="32" height="32" class="brand-symbol">
+    <span class="brand-name">Empório da Música</span>
+  </div>
+  <button type="button" id="new-conversation" class="header-action">
+    <svg viewBox="0 0 24 24" aria-hidden="true" class="icon"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v9M7.5 12h9"/></svg>
+    <span>Nova conversa</span>
+  </button>
+</header>
+
+<main class="chat">
+  <section id="opening" class="opening" aria-labelledby="slogan">
+    <p id="slogan" class="slogan">Sua música começa aqui.</p>
+    <p class="intro">Pergunte sobre instrumentos, preços, formas de pagamento, seu pedido ou as regras da loja.</p>
+    <div class="suggestions" aria-label="Sugestões">
+      <button type="button" class="suggestion" data-message="Tem violão de nylon até R$ 800?">Violões de nylon até R$ 800</button>
+      <button type="button" class="suggestion" data-message="Quero consultar meu pedido">Consultar meu pedido</button>
+      <button type="button" class="suggestion" data-message="Como funciona a troca?">Como funciona a troca?</button>
+    </div>
+  </section>
+
+  <div class="section-bar">
+    <h1 class="section-title">Atendimento</h1>
+    <span class="rule" aria-hidden="true"></span>
+    <span class="profile-group">
+      <span class="profile">Perfil: <strong id="profile-label">Visitante</strong></span>
+      <button type="button" id="change-profile" class="link-button" aria-label="Trocar perfil de demonstração">Trocar</button>
+    </span>
+  </div>
+
+  <div id="log" class="log" role="log" aria-live="polite" aria-label="Conversa"></div>
+  <p id="status" class="visually-hidden" role="status"></p>
 </main>
-<script>
-const brl = c => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const log = document.getElementById("log");
-const esc = s => s.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-async function ensureSession() { await fetch("/api/session", { method: "POST" }); }
-document.getElementById("f").addEventListener("submit", async e => {
-  e.preventDefault();
-  const input = document.getElementById("m"), message = input.value.trim();
-  if (!message) return;
-  log.insertAdjacentHTML("beforeend", `<div class="turn user">${esc(message)}</div>`);
-  input.value = "";
-  const send = () => fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ request_id: crypto.randomUUID(), message }) });
-  let r = await send();
-  if (r.status === 410) { await ensureSession(); r = await send(); }
-  const data = await r.json();
-  if (!r.ok) { log.insertAdjacentHTML("beforeend", `<div class="turn">${esc(data.message)}</div>`); return; }
-  const cards = data.cards.map(c => `<div class="card"><strong>${esc(c.name)}</strong> · ${esc(c.attribute)}<br>
-    <span class="price">${brl(c.payment_cents ?? c.offer_cents)}</span> ${c.payment_method === "pix" ? "no PIX" : ""}
-    · ${c.availability === "available" ? "Disponível" : "Indisponível"}</div>`).join("");
-  log.insertAdjacentHTML("beforeend", `<div class="turn">${esc(data.text)}${cards}</div>`);
-});
-ensureSession();
-</script>
+
+<form id="composer" class="composer" autocomplete="off">
+  <label for="message" class="visually-hidden">Mensagem</label>
+  <input id="message" name="message" type="text" maxlength="2000" placeholder="Escreva sua mensagem..." required>
+  <button id="send" type="submit" class="send">
+    <svg viewBox="0 0 24 24" aria-hidden="true" class="icon"><path d="M3 11.2 20.5 3.5 14 21l-2.6-7.3z"/></svg>
+    <span class="visually-hidden">Enviar</span>
+  </button>
+</form>
 </body>
 </html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Empório da Música">
+  <!-- Ressonância mark redrawn as a vector from the approved board (guide 01 §2): two thick open arcs offset in
+       opposite directions and a copper stroke between them. The guide's raster thumbnail stays private. -->
+  <path d="M24 8.9 A11.5 11.5 0 1 0 20 31.5" fill="none" stroke="#173d33" stroke-width="4.6"/>
+  <path d="M24 39.1 A11.5 11.5 0 1 0 28 16.5" fill="none" stroke="#173d33" stroke-width="4.6"/>
+  <rect x="22.6" y="18.5" width="2.8" height="13.5" rx="1.4" fill="#984b2c"/>
+</svg>

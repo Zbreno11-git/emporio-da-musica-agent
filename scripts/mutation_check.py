@@ -17,6 +17,7 @@ TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
 TPM = "tests/domain/test_product_mentions.py"
+FJ, TJ = "app/static/format.js", "tests/js/test_node_units.py::test_format_rules"
 O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
 B, CM, TCM = "scripts/benchmark_models.py", "scripts/cost_model.py", "tests/evals/test_cost_model.py"
 
@@ -98,6 +99,10 @@ MUTATIONS = [
     (C, '                 "availability", "sellable", "created_at",', '                 "status", "availability", "sellable", "created_at",',
      f"{TC}::test_status_column_is_not_public"),
     (C, "        if wanted:\n", "        if False:\n", f"{TC}::test_discover_keeps_only_the_strings_the_customer_asked_for"),
+    (FJ, '  if (card.payment_cents != null && card.payment_method && card.payment_method !== "table") {',
+     '  if (card.payment_cents != null && card.payment_method) {', TJ),
+    (FJ, "  if (card.discount_percent > 0) {", "  if (false) {", TJ),
+    (FJ, "  if (!available) return view;", "  if (false) return view;", TJ),
     (B, '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
      f"{TCM}::test_cost_per_turn_bills_thinking_tokens_as_output"),
     (CM, "    return mean_usd_per_turn * turns * conversations", "    return mean_usd_per_turn * conversations",

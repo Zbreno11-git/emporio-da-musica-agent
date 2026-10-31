@@ -1,6 +1,10 @@
-# Test dependencies. Playwright is added in S7.
+# Test dependencies. Browser tests and screenshots use Playwright's Chromium:
+#   .venv/bin/python -m playwright install chromium
 -r requirements.txt
 pytest==9.2.0
 iniconfig==2.3.1
 pluggy==1.7.0
 packaging==26.3
+playwright==1.64.1
+greenlet==3.5.6
+pyee==14.0.0

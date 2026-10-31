@@ -10,7 +10,7 @@
 
 **Current objective:** close S5 with the measured cost model (D19), then S6 (UI), S6b (`/admin`, D20), S7 (testing and hardening with a documented QA report and screenshots, D21; second revision) and S8 (real capture, final README, delivery PDF) before the freeze on **Tue 2026-11-03 23:59 São Paulo**. First plan these sessions in detail (phases, checkpoints with expected numbers) in `docs/SESSIONS.md`, then build them.
 
-**S5.2 closed 2026-10-31 ~17:30 SP (C7b); S5.3 closed ~19:00 SP (C7c, D22).** Next: S6 (Ressonância UI). The local server code is ahead of the Cloud Run revision (`37c5597`) until the S7 redeploy. The original S5.2 instruction, kept for the record:
+**S5.2 closed 2026-10-31 ~17:30 SP (C7b); S5.3 closed ~19:00 SP (C7c, D22); S6 closed ~20:15 SP (C8).** Next: S6b (`/admin`, D20). The local server code is ahead of the Cloud Run revision (`37c5597`) until the S7 redeploy. The original S5.2 instruction, kept for the record:
 
 **Former next step (S5.2):** write `scripts/cost_model.py`. It reads `evals/benchmark/2026-10-31-*.jsonl` and `evals/pricing.json` and writes `evals/cost-model.md` with:
 - the average cost per answer and per turn type for `gemini-3.1-flash-lite` (pinned) and `gemini-3.5-flash-lite` (migration path);
@@ -34,7 +34,7 @@ Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (ben
 | C7 | Benchmark pins `GEMINI_MODEL` | ✅ `gemini-3.1-flash-lite` ([report](../evals/model-benchmark.md)) |
 | C7b | Cost model for the PDF (D19) | ✅ delivered version: 0.00185 USD/turn; 2,000 conversations × 4 turns ≈ US$ 15.47/month incl. Cloud Run gross ([report](../evals/cost-model.md)) |
 | C7c | S5.3 guards (D22): no invented products, false absences or promises | ✅ rerun 18/18 turns, 0 blockers, 0 quality notes on both lite models ([report](../evals/model-benchmark.md)) |
-| C8 | UI at 320/390/desktop | ⬜ |
+| C8 | UI at 320/390/desktop | ✅ local, real Gemini: card R$ 2.199,00 = DTO 219900 → R$ 2.089,05 = DTO 208905 at 320/390/1280, 0 px horizontal overflow, 0 console errors, 1 avatar per turn; order flow visitor → B (no leak) → A ([screens](qa/screens/)) |
 | C8b | `/admin` with token, aggregates only (D20) | ⬜ |
 | C9 | Playwright + failures + QA report with screenshots (D21), second revision | ⬜ |
 | C10 | 5 real conversations, README, clean clone, PDF | ⬜ |
@@ -111,4 +111,6 @@ Expected for `3.1-flash-lite`: an average of about **US$ 0.00167 per turn** (ben
 | Suite + mutations after S5.2 | `pytest -q` · `mutation_check.py` | `102 passed` · `33/33 mutations caught` | 2026-10-31 |
 | Guards rerun (S5.3) | `benchmark_models.py --models gemini-3.1-flash-lite --repeat 2 --tag=-s53` | `"blocker_turns": 0, "quality_issues": 0`, `avg_cost_usd_per_turn 0.00185` (3.5-flash-lite: 0, 0, 0.00241) | 2026-10-31 |
 | Suite + mutations after S5.3 | `pytest -q` · `mutation_check.py` | `120 passed` · `42/42 mutations caught` | 2026-10-31 |
+| UI (C8) | Playwright on the local app with real Gemini, 320/390/1280 | card `R$ 2.199,00` (DTO 219900) then `R$ 2.089,05` (DTO 208905) at each width; `h_overflow_px 0`; `console_errors []`; turns 1.8–2.4 s | 2026-10-31 |
+| Suite + mutations after S6 | `pytest -q` · `mutation_check.py` | `121 passed` · `45/45 mutations caught` | 2026-10-31 |
 | Importer | `.venv/bin/python scripts/import_snapshot.py` | `"dataset_id": "1412d32a6eeb"`, counts 9/65/25/50/20/22, `sellable_count` 61 | 2026-10-31 |
