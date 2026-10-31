@@ -7,6 +7,7 @@ Usage: .venv/bin/python scripts/mutation_check.py
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -188,7 +189,7 @@ MUTATIONS = [
 
 
 def main() -> int:
-    escaped = 0
+    escaped = skipped = 0
     for rel, old, new, test in MUTATIONS:
         path = ROOT / rel
         original = path.read_text()
@@ -202,9 +203,15 @@ def main() -> int:
         finally:
             path.write_text(original)
         caught = run.returncode != 0
+        # A skipped test proves nothing: without the snapshot (EMPORIO_SNAPSHOT) the data tests skip and every
+        # mutation they guard would "escape" silently (seen in the clean-clone check, 18/78).
+        not_run = not caught and re.search(r"\b\d+ skipped\b", run.stdout) and not re.search(r"\b\d+ passed\b", run.stdout)
         escaped += not caught
-        print(("CAUGHT  " if caught else "ESCAPED ") + f"{rel}: {new.strip()[:70]}")
+        skipped += bool(not_run)
+        print(("CAUGHT  " if caught else "NOT RUN " if not_run else "ESCAPED ") + f"{rel}: {new.strip()[:70]}")
     print(f"{len(MUTATIONS) - escaped}/{len(MUTATIONS)} mutations caught")
+    if skipped:
+        print(f"{skipped} expected tests were skipped, not run: set EMPORIO_SNAPSHOT=<challenge ZIP> and rerun")
     return 1 if escaped else 0
 
 

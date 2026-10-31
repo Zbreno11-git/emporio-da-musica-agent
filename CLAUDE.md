@@ -13,7 +13,7 @@ The project uses:
 - an HTML interface with the Ressonância brand;
 - a Cloud Run demo.
 
-State on 2026-10-31 17:50 São Paulo: S0–S7 done; S8 in progress (5 real captures taken on revision `emporio-agent-00006-z4v`; review, README, clean clone and PDF left, plus two small open debts). The ordered list and the deploy command are in the `docs/PROGRESS.md` resume block.
+State on 2026-10-31 19:15 São Paulo: S0–S8 done. Revision `emporio-agent-00010-x5j` (commit `69f4b68`) is the delivered version; README, reviewed examples, security (D23) and the delivery PDF are done. C10 waits only for Breno to upload the PDF and reply to the e-mail. Details and the deploy command are in the `docs/PROGRESS.md` resume block.
 
 ## Tie-breaking requirement
 

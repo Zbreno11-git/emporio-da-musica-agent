@@ -6,7 +6,7 @@
 
 | # | Class | Occurrences | One-line antidote |
 | --- | --- | --- | --- |
-| 1 | A test passed for a reason other than the rule it claimed to protect | 4 | Run the mutation that removes the rule; the named test must fail |
+| 1 | A test passed for a reason other than the rule it claimed to protect | 5 | Run the mutation that removes the rule; the named test must fail |
 | 2 | Recommended a date or time without doing the calendar or clock math | 2 | Before writing a date or time, compute it from the source (weekday, business days, `TZ=... date`) |
 | 3 | Took a spec value as valid on the hosting platform without checking the platform's constraints | 1 | Before deploying a route or setting, check it against the target platform's documented limits; verify on the URL, not only locally |
 | 4 | Gave the model a tool surface where a plausible wrong use fails silently | 2 | Make the wrong use fail loudly (remove or rename the trap) and re-check the model's claims against server facts |
@@ -23,6 +23,8 @@
 **2026-10-31 — row cap.** `test_rows_read_are_capped_without_limit` asserted `<= 65` on a cross join, but deduplication already guarantees at most 65 IDs, so removing the cap could never fail it. Found during the second review pass; the test now lowers the cap to 5 and expects exactly 5 IDs.
 
 **2026-10-31 — benchmark nylon check.** The `nylon_800` scenario checked only availability and budget, so a steel-string card for a nylon request would have passed as "no blocker". Found by reading the tool arguments of a rerun, not by the battery. The scenario now checks every card's strings, and discovery re-applies the requested string type in code.
+
+**2026-10-31 — mutation net without the snapshot (clean-clone check).** Following the README in a fresh clone, `mutation_check.py` printed `18/78 mutations caught`. The README ran it without `EMPORIO_SNAPSHOT`, so every test that reads the challenge data was skipped, and a skipped test counted as an escaped mutation with no word about why. In the working copy the data sat in `_private_inputs/`, so the problem never showed. The script now prints `NOT RUN` and the reason when the expected test was skipped, and the README passes the snapshot.
 
 > **A green test proves only what a mutation of the rule can make it fail.**
 

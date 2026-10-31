@@ -2,122 +2,31 @@
 
 > Working file with the state of the **current** session, updated at every step.
 
-## ▶️ RESUME HERE — 2026-10-31 17:50 São Paulo (mid-S8, before a /compact)
+## ▶️ RESUME HERE — 2026-10-31 19:15 São Paulo (S8 done; C10 waits only for Breno's submission)
 
-**Repository state:**
-- Tree clean; HEAD = the commit `chore: checkpoint before compact (S8 capture taken on 00006-z4v, QA 12/12)` (`03ddb29` or the docs commit right after it). Check `git log -1` against `git ls-remote origin refs/heads/main`.
-- Locks: none. Background runs: none. The local uvicorn on port 8765 was stopped.
-- The 5 example `.md` files are **not** committed on purpose: `scripts/capture_examples.py --rerender` rebuilds them from `examples/raw/`.
+**Repository state:** tree clean after the closing commit; HEAD == `origin/main` (check `git log -1` against `git ls-remote origin refs/heads/main`). No locks, no background runs.
 
-**World state (measured 2026-10-31 17:49 SP):**
-- **Cloud Run:** `emporio-agent` serves **`emporio-agent-00006-z4v`**, label `commit=0756d26`, secrets `GEMINI_API_KEY=gemini-api-key:1` and `ADMIN_TOKEN=admin-token:1`. `/health` ok.
-- **Hosted QA:** `scripts/qa_capture.py` → `12/12 hosted cases passed` on `00006-z4v`.
-- **Captures:** the 5 delivery conversations were captured on `00006-z4v`, 5/5 checks pass (`examples/raw/*.json`, `examples/screens/*.png`).
-- **Spend:** billing linked; budget R$ 30; Gemini spend so far a few cents.
+**World state (measured 2026-10-31):**
+- Cloud Run `emporio-agent` serves **`emporio-agent-00010-x5j`**, label `commit=69f4b68` (the last code commit; later commits are docs only). Secrets `gemini-api-key:1`, `admin-token:1`. `/health` ok; `HEAD /` 200.
+- Hosted QA `13/13` on `00010-x5j`; the five delivery conversations captured on it (5/5 checks, reviewed in `examples/README.md`).
+- Gates: `200 passed`; `78/78 mutations caught`. Clean clone (README followed literally, challenge ZIP): `dataset_id 1412d32a6eeb`, `200 passed`, `78/78` with `EMPORIO_SNAPSHOT`, milestone 1 `"passed": true`.
+- Final benchmark runs (`evals/benchmark/*-s9.jsonl`, `*-s9sec.jsonl`): store scenarios 0 blockers on both models; red-team battery 18 turns, 0 blockers. Cost model: US$ 0.00203 per answer; US$ 16.89 a month for 2,000 conversations (R$ 91,57).
+- Delivery PDF built at the repository root (git-ignored): `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`, from `docs/delivery/report.template.html` by `scripts/build_pdf.py`. E-mail text: `docs/delivery/email-reply.md`.
 
-**Current objective:** finish S8 and close C10 before the freeze on **Tue 2026-11-03 23:59 São Paulo**. Breno asked (2026-10-31 17:49) to plan and build what is left **and fix every open debt or bug**.
+**Depends on Breno (C10):**
+1. Upload the PDF to the Google Form.
+2. Reply to the selection e-mail with the text in `docs/delivery/email-reply.md` (repository link).
+3. After the evaluation: re-link billing for `businesscardscanner-504717` (D18).
 
-**Open debts and bugs — fix first, in this order (each with a test and a mutation when it is a rule):**
-1. **`HEAD /` and `HEAD /health` answer 405.** Uptime checkers use HEAD.
-   - Fix: route GET+HEAD (`@app.api_route(..., methods=["GET", "HEAD"])`) for `/`, `/health`, `/healthz`, `/admin`.
-   - Test: `tests/http/test_hardening.py`.
-2. **Policy sources disappear on follow-up turns.** In `examples/raw/04-return-policy.json`, turn 2 applies §4.1, which was retrieved in turn 1 and sits in the history, but `sources` is empty, so the UI shows no "Fontes".
-   - Recommended fix: the session keeps the policy sources of the previous turn. A turn **without tool calls** whose text survives the checks re-lists them, labeled "(consultada na mensagem anterior)". The `Source` contract needs no new field.
-   - Test in `tests/http/test_chat_api.py` (two turns: `search_policy` then text only); mutation.
-   - If this turns out wrong for small talk ("obrigado"), list it as a README limitation instead and tell Breno.
-3. **After 1–2:** redeploy (command below, label = HEAD), then `scripts/qa_capture.py` (expect 12/12), then **recapture** `scripts/capture_examples.py` (expect 5/5). `examples/` must be real captures of the delivered revision.
-4. **Translations:** write `examples/translations.json` (exact PT string → EN) for every customer and agent text in `examples/raw/*.json`, then `--rerender` until it prints `translations pending: 0` for all 5.
-5. **Review (S8.2):** `examples/README.md` with one section per conversation, applying the rubric of `.claude/skills/qa-response/SKILL.md` (read it; the skill has `disable-model-invocation`, so apply it by hand and say so).
-   - For each claim that changes a decision: the fact, the source (tool result / manual section), and a verdict (sustained / contradicted / no evidence).
-   - Points already seen: 03 mixes "tu"/"você" (language note); 01 turn 2 is generic but supported; 04 turn 2 is sustained by §4.1 (refund in up to 10 business days, return shipping paid by the store, original packaging).
-   - Any blocker → fix the cause, redeploy, recapture.
-6. **Update `docs/ai-usage.md`** with the real use in these sessions: Claude Code built and verified; Breno decided scope and money; ChatGPT for brainstorming and specs.
+**Freeze:** Tue 2026-11-03 23:59 São Paulo (D11). Any change after this point needs Breno's authorization; a code change means redeploy → `qa_capture.py` → `capture_examples.py` → review → `build_pdf.py`, in that order, because each step's numbers come from the previous one.
 
-**Then the deliverables:**
-7. **Final `README.md` (English).** It covers:
-   - what it is;
-   - the live URL and revision;
-   - a quick tour;
-   - architecture (one diagram or list);
-   - guardrails (D22);
-   - setup from scratch: venv, `requirements-dev`, `playwright install chromium`, `import_snapshot.py --source <challenge ZIP>`, `build_policy_index.py`, `.env` from `.env.example` (note `ADMIN_TOKEN`), pytest, uvicorn;
-   - tests/QA links; cost summary (`evals/cost-model.md`); `/admin`;
-   - decisions (link D1–D22);
-   - limitations, including the 2027-05-07 model shutdown, in-memory sessions and metrics, retrieval paraphrases 4/6, the order 8 estimate in the past, §3 × §3.1, rate limits only tested locally, and characteristics outside the quality list being prompt-governed;
-   - AI usage.
-8. **Clean clone (C10):** `git clone https://github.com/Zbreno11-git/emporio-da-musica-agent` into the scratchpad. Follow the README literally with the ZIP from `_private_inputs/originals/` and run `pytest` plus milestone 1 locally. Fix the README until it works as written.
-9. **Delivery PDF (D17):**
-   - `docs/delivery/report.html` (English, committed) → `scripts/build_pdf.py` (Playwright `page.pdf()`, A4) → `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`. It is git-ignored (`*.pdf`); hand the path to Breno.
-   - Sections: problem → solution → architecture → guardrails (D22, with the real cases) → evidence (tests 156+, mutations 60/60, hosted QA 12/12, 5 examples) → **cost** (US$ 0.00203 per answer; per turn type; monthly 500/2,000/10,000 with Cloud Run and BRL; model lines and the 2027 dates) → limitations → links (repo, URL, examples, QA).
-   - Every number is read from `evals/cost-model.md`, `docs/qa/README.md` and the raw files, not typed from memory.
-   - Also `docs/delivery/email-reply.md` (short, English, with the repo link).
-10. **Close C10:**
-    - `check_staged.py` PASS;
-    - `git ls-remote` == HEAD;
-    - Cloud Run label == last code commit;
-    - JOURNAL entry; this block updated;
-    - tell Breno what he must do (upload the PDF to the Google Form, reply to the e-mail, re-link `businesscardscanner-504717` after the evaluation).
+**If something must change before the freeze:**
+- Deploy command (authorized for this project since S4): `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio gcloud run deploy emporio-agent --project emporio-da-musica-agent --source . --region southamerica-east1 --service-account emporio-agent-sa@emporio-da-musica-agent.iam.gserviceaccount.com --allow-unauthenticated --min-instances 0 --max-instances 1 --concurrency 20 --timeout 60 --memory 512Mi --set-secrets GEMINI_API_KEY=gemini-api-key:1,ADMIN_TOKEN=admin-token:1 --set-env-vars GEMINI_MODEL=gemini-3.1-flash-lite,EXPOSE_TRACE=1,MAX_TURNS_PER_DAY=400 --labels app=emporio-agent,commit=<short HEAD> --quiet`.
+- Benchmark files are named by the UTC date (`date.today()` on this machine): a rerun after 21:00 São Paulo writes `2026-11-01-*`, and `scripts/cost_model.py` reads `BENCHMARK_DATE = "2026-10-31"`.
+- Shell traps: `pkill -f` kills its own shell (use `fuser -k 8765/tcp`); argparse needs `--tag=-s9`; `| tail` hides a script's exit code; the challenge ZIP name has a decomposed "é" (use a glob); edit `CLAUDE.md` with the Edit tool.
+- Before every commit: `git add`, then `scripts/check_staged.py` → PASS.
 
-**Checkpoints:** C0–C9 ✅ (C9: 156 tests, 60/60 mutations, hosted 12/12). C7b cost model ✅ on the delivered version (`-s8` runs). **C10 ⬜**: 5 real conversations reviewed without blockers, README, clean clone, PDF.
-
-**Re-read, in this order:**
-1. `CLAUDE.md`.
-2. This block.
-3. `docs/SESSIONS.md` S8.
-4. `docs/DECISIONS.md` D13, D16, D17, D19–D22.
-5. `docs/qa/README.md`.
-6. `evals/cost-model.md`.
-7. `examples/raw/*.json`.
-8. `.claude/skills/qa-response/SKILL.md`.
-9. Skills: `software-build`, `evidencia` (every number in the README/PDF), `frontend-e-ux` (the PDF is a visual artifact: look at it rendered), `nuvem-e-deploy` (before the redeploy).
-
-**Decisions from the conversation (and where they are written):**
-- Freeze Tue 2026-11-03 23:59 São Paulo — Breno — D11.
-- English repo; customer-facing agent and UI in PT-BR — Breno — D16.
-- Delivery: English PDF via Google Forms plus an e-mail reply — Breno — D17.
-- Budget US$ 5 → R$ 30; keep the current Gemini key — Breno — D12, D18.
-- `businesscardscanner-504717` unlinked from billing — Breno — D18 (re-link after the demo).
-- Benchmark candidates 3.1-flash-lite / 3.5-flash-lite / 3.6-flash — Breno — D14.
-- Measured cost model in the PDF — Breno — D19.
-- Never use the `altivaserra` GCP project — Breno — `CLAUDE.md`, D8.
-- `/admin`: aggregates only, token in Secret Manager — Breno — D20 (guard on the data API: agent amendment, in D20).
-- Testing and hardening with a QA report and screenshots — Breno — D21.
-- No invented products, numbers or qualities "a todo custo", enforced by the server — Breno (goal), agent (mechanism) — D22.
-- 2026-10-31 17:49: plan and build the rest **and fix every open debt or bug** — Breno — this block.
-- ChatGPT used for brainstorming and specs — Breno — `docs/ai-usage.md`.
-
-**Do not forget (lives only here or is easy to miss):**
-- **Costs for the PDF:** US$ 0.00203 per answer on the delivered version (`evals/cost-model.md`, `-s8` runs). Earlier runs: 0.00167 (baseline), 0.00185 (S5.3). For 2,000 conversations × 4 turns: US$ 16.24 Gemini + US$ 0.65 Cloud Run gross = US$ 16.89 ≈ R$ 91,58 at PTAX 5.4212 (2026-10-30).
-- **Model dates:** `gemini-3.1-flash-lite` shuts down on 2027-05-07 (replacement `gemini-3.5-flash-lite`: 0 blockers, US$ 0.00255 per turn). `gemini-3.6-flash` prices double on 2027-01-01.
-- **D22 real cases**, for the PDF and README:
-  - invented "Ibanez GSR200";
-  - `status = 'available'` → false "we don't have it";
-  - a nylon search without the filter would offer a steel Shelby;
-  - a PIX price computed by the model;
-  - "posso ficar de olho";
-  - "timbre bem definido" not in the data (≈ 8% of 126 answers).
-- **Times:** headless Chromium renders UTC unless `timezone_id` is set. Read times with `TZ=America/Sao_Paulo date` (ERRORS class 2).
-- **Deploy command** (authorized for this project since S4): `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio gcloud run deploy emporio-agent --project emporio-da-musica-agent --source . --region southamerica-east1 --service-account emporio-agent-sa@emporio-da-musica-agent.iam.gserviceaccount.com --allow-unauthenticated --min-instances 0 --max-instances 1 --concurrency 20 --timeout 60 --memory 512Mi --set-secrets GEMINI_API_KEY=gemini-api-key:1,ADMIN_TOKEN=admin-token:1 --set-env-vars GEMINI_MODEL=gemini-3.1-flash-lite,EXPOSE_TRACE=1,MAX_TURNS_PER_DAY=400 --labels app=emporio-agent,commit=<short HEAD> --quiet`.
-- **Shell traps:**
-  - `pkill -f <pattern>` kills the shell running it; use `fuser -k 8765/tcp`.
-  - argparse reads `--tag -s8` as an option; write `--tag=-s8`.
-  - The auto-mode classifier blocks editing `CLAUDE.md` from a shell script; use the Edit tool.
-- **Before every commit:** `git add`, then `scripts/check_staged.py` must print PASS. It lists images for review by eye and fails on broken relative links (that is why the example `.md` files wait for `examples/README.md`).
-- **`.env`** holds `GEMINI_API_KEY` and `ADMIN_TOKEN`. Never print them; verify by hash.
-- **Snapshot tests** read `_private_inputs/challenge`. Browser tests need `python -m playwright install chromium` (Chromium v1248 is cached).
-
-**Depends on Breno:** nothing until the end. Then he uploads the PDF to the Google Form, replies to the e-mail, and re-links `businesscardscanner-504717` after the evaluation.
-
-**Risks of the next steps:**
-- Each redeploy invalidates the examples. Do the code fixes (debts 1–2) **before** recapturing.
-- Gemini spend: ≈ US$ 0.05 per QA + capture round.
-
-**Before trusting this block, check:**
-- `git status --short` is empty and `git rev-parse HEAD` = `git ls-remote origin refs/heads/main`.
-- `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio gcloud run services describe emporio-agent --project emporio-da-musica-agent --region southamerica-east1 --format='value(status.latestReadyRevisionName,metadata.labels.commit)'` → `emporio-agent-00006-z4v 0756d26`.
-- `curl -s https://emporio-agent-669786539213.southamerica-east1.run.app/health` → `"status":"ok"`.
-- `.venv/bin/python -m pytest -q` → `156 passed`; `scripts/mutation_check.py` → `60/60 mutations caught`.
-- `ls examples/raw` → 5 json files; `.venv/bin/python scripts/capture_examples.py --rerender` → 5 × PASS with translations pending (expected until step 4).
+**Before trusting this block:** `git status --short` empty; `gcloud run services describe ...` → `emporio-agent-00010-x5j 69f4b68`; `curl $URL/health` ok; `pytest -q` → `200 passed`.
 
 ## Proofs
 
@@ -155,3 +64,10 @@
 | Hosted QA on `00006-z4v` | `scripts/qa_capture.py` | `12/12 hosted cases passed []` | 2026-10-31 |
 | Delivery captures on `00006-z4v` | `scripts/capture_examples.py` | `01..05: PASS` (5/5) | 2026-10-31 |
 | Importer | `.venv/bin/python scripts/import_snapshot.py` | `"dataset_id": "1412d32a6eeb"`, counts 9/65/25/50/20/22, `sellable_count` 61 | 2026-10-31 |
+| D23 guards and battery | `benchmark_models.py ... --tag=-s9sec` / `--tag=-s9` | attacks 18 turns, 0 blockers; store 36 turns (2 models), 0 blockers | 2026-10-31 |
+| Suite + mutations, final | `pytest -q` · `mutation_check.py` | `200 passed` · `78/78 mutations caught` | 2026-10-31 |
+| Final revision | `gcloud run services describe ...` | `emporio-agent-00010-x5j 69f4b68`; `HEAD /` 200 | 2026-10-31 |
+| Hosted QA on `00010-x5j` | `scripts/qa_capture.py` | `13/13 hosted cases passed []` | 2026-10-31 |
+| Delivery captures on `00010-x5j` | `scripts/capture_examples.py` · `--rerender` | `01..05: PASS`; `translations pending: 0` ×5 | 2026-10-31 |
+| Clean clone (C10) | README steps in a fresh clone | `dataset_id 1412d32a6eeb`; `200 passed`; `78/78` with `EMPORIO_SNAPSHOT`; smoke `"passed": true` | 2026-10-31 |
+| Delivery PDF | `scripts/build_pdf.py` | `wrote docs/delivery/report.html and Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf` (4 pages, looked at) | 2026-10-31 |

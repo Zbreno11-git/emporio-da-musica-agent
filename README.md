@@ -90,12 +90,13 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 .venv/bin/python -m playwright install chromium          # browser tests and QA scripts
 
-ZIP="path/to/Desafio_Técnico_AI_Engineer_2026-....zip"
+# A glob, not the typed name: the ZIP's "é" may be stored decomposed (e + accent), so a typed path does not match
+ZIP=$(ls path/to/Desafio*AI_Engineer*.zip)
 .venv/bin/python scripts/import_snapshot.py --source "$ZIP"      # catalog.db, orders-demo.db, manifest → data/build/
 .venv/bin/python scripts/build_policy_index.py --source "$ZIP"   # manual sections → data/build/policy_sections.json
 
 EMPORIO_SNAPSHOT="$ZIP" .venv/bin/python -m pytest -q             # no API key needed (scripted fake model)
-.venv/bin/python scripts/mutation_check.py                       # every mutation must be caught
+EMPORIO_SNAPSHOT="$ZIP" .venv/bin/python scripts/mutation_check.py   # every mutation must be caught
 
 cp .env.example .env    # set GEMINI_API_KEY (and ADMIN_TOKEN for /admin); never commit .env
 .venv/bin/uvicorn app.main:get_app --factory --port 8000         # open http://localhost:8000

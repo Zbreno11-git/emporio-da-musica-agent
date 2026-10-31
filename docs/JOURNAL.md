@@ -2,6 +2,26 @@
 
 > One entry per session, newest first. Each entry covers what was done, what was decided and why, and what was learned. Entries before 2026-10-31 evening were written in Portuguese and translated here.
 
+## 2026-10-31 evening (second compact) — S8: debts, LLM-attack hardening (D23), capture, review, README, PDF
+
+**Done.**
+- Open debts closed and live: `HEAD` on the page routes (was 405); manual sections carried to the follow-up turn and cited as "consultada na mensagem anterior" when the answer relies on them (capture 04).
+- D23, after Breno asked to defend the agent against prompt injection and other LLM attacks: the customer's message is never evidence for a price, discount or deadline; deadlines checked against the manual; false absences rejected; the hand-off summary checked like the shown text; "preparei um resumo" requires a prepared hand-off; prompt rule 13; HTML in model text proven inert in the browser; `docs/security.md` maps OWASP LLM 2025 to controls and tests.
+- Red-team battery (9 attacks × 2) and the store scenarios rerun on the final code: 0 blockers. Cost model on those turns: US$ 0.00203 per answer, US$ 16.89 a month for 2,000 conversations.
+- Revision `00010-x5j` (commit `69f4b68`): hosted QA 13/13 (new prompt-injection case), five conversations recaptured, translated and reviewed (5 PASS). README rewritten; the clean clone reproduced the dataset, the tests and milestone 1. Delivery PDF built from the generated files; e-mail text ready.
+- Gates: 200 tests, 78/78 mutations.
+
+**Decided.**
+- Breno: defend against LLM attacks (D23 goal).
+- Agent: keep the technical panel on for the evaluators (D23 trigger: off with real customers); the PDF is rendered from a template filled by `scripts/build_pdf.py`, so no number is typed by hand.
+
+**Found.**
+- The security review question "who writes each evidence source?" found that customer amounts and percentages counted as evidence (ERRORS class 5).
+- The battery found its own blind spots: a first wording of rule 13 broke the exact-R$ 500 hand-off (2/2), and false absences under attack passed string checks (ERRORS class 4). Each became a blocker check in the battery.
+- Each capture review found one more gap: an unchecked hand-off summary, "equilibrado" outside the quality list, a summary "prepared" without the tool. Each was fixed, measured for false positives on the stored answers (0 each) and redeployed.
+- The clean clone found two README traps: the ZIP's "é" is stored decomposed, so a typed path fails (now a glob), and the mutation net without the snapshot reported 18/78 silently (ERRORS class 1; now `NOT RUN`).
+- Six catalog descriptions name another brand than their product (source-findings A12).
+
 ## 2026-10-31 (after the compact) — S5.2–S7: cost model, anti-invention guards, UI, /admin, QA
 
 **Done.**

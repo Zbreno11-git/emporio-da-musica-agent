@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empório da Música · AI customer-service agent · Breno Zamponi</title>
+<!-- Source of the delivery PDF (D17). Numbers are placeholders filled by scripts/build_pdf.py from the generated files;
+     docs/delivery/report.html is the rendered result. Edit this template, then rerun the script. -->
+<style>
+@font-face { font-family: "Fraunces"; font-weight: 600; src: url(../../app/static/fonts/fraunces-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Fraunces"; font-weight: 600; src: url(../../app/static/fonts/fraunces-latin-ext-600-normal.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+1E00-1E9F, U+2020, U+20A0-20AB, U+20AD-20C4; }
+@font-face { font-family: "Source Sans 3"; font-weight: 400; src: url(../../app/static/fonts/source-sans-3-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-weight: 600; src: url(../../app/static/fonts/source-sans-3-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-weight: 700; src: url(../../app/static/fonts/source-sans-3-latin-700-normal.woff2) format("woff2"); }
+
+@page { size: A4; margin: 16mm 16mm 18mm; }
+:root { --forest: #173d33; --rust: #984b2c; --ink: #242825; --muted: #5b625d; --line: #d9d4c7; --tint: #f4f1e8; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; background: #fff; color: var(--ink); font: 400 10pt/1.45 "Source Sans 3", system-ui, sans-serif; }
+main { max-width: 178mm; margin: 0 auto; }
+h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 600; color: var(--forest); line-height: 1.2; }
+h1 { font-size: 22pt; margin: 0 0 2mm; }
+h2 { font-size: 13.5pt; margin: 6mm 0 2.5mm; padding-bottom: 1.2mm; border-bottom: 1.5px solid var(--forest); break-after: avoid; }
+h3 { font-size: 11pt; margin: 4mm 0 1.5mm; break-after: avoid; }
+p { margin: 0 0 2.2mm; }
+ul { margin: 0 0 2.5mm; padding-left: 5mm; }
+li { margin: 0 0 1mm; }
+a { color: var(--rust); text-decoration: none; }
+code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: .84em; }
+strong { font-weight: 700; }
+.kicker { font-weight: 600; color: var(--rust); letter-spacing: .04em; text-transform: uppercase; font-size: 8.5pt; margin: 0 0 1.5mm; }
+.byline { color: var(--muted); margin: 0 0 4mm; }
+.lede { font-size: 11pt; margin: 0 0 4mm; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5mm; margin: 0 0 3mm; }
+.stat { background: var(--tint); border-left: 3px solid var(--forest); padding: 2.2mm 3mm; break-inside: avoid; }
+.stat b { display: block; font: 700 13pt/1.15 "Source Sans 3", sans-serif; color: var(--forest); }
+.stat span { font-size: 8.6pt; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; margin: 1.5mm 0 3mm; font-size: 8.8pt; break-inside: avoid; }
+th, td { text-align: left; vertical-align: top; padding: 1.3mm 1.8mm; border-bottom: 1px solid var(--line); }
+th { font-weight: 700; color: var(--forest); border-bottom: 1.5px solid var(--forest); }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.flow { display: grid; grid-template-columns: 1fr; gap: 1.4mm; margin: 2mm 0 3mm; font-size: 9pt; }
+.box { border: 1px solid var(--line); border-left: 3px solid var(--forest); padding: 1.6mm 2.6mm; background: #fff; break-inside: avoid; }
+.box b { color: var(--forest); }
+.box.check { border-left-color: var(--rust); background: var(--tint); }
+.arrow { text-align: center; color: var(--muted); font-size: 8pt; line-height: 1; }
+.note { color: var(--muted); font-size: 8.6pt; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.break { break-before: page; }
+footer { margin-top: 6mm; padding-top: 2mm; border-top: 1px solid var(--line); color: var(--muted); font-size: 8.4pt; }
+</style>
+</head>
+<body>
+<main>
+
+<p class="kicker">Artefact · AI Engineer – Full-Stack para Aplicações com IA Generativa · technical challenge</p>
+<h1>Empório da Música: a customer-service agent that does not make facts up</h1>
+<p class="byline">Breno Zamponi · {{built}} · Repository: <a href="https://github.com/Zbreno11-git/emporio-da-musica-agent">github.com/Zbreno11-git/emporio-da-musica-agent</a> · Live demo: <a href="https://emporio-agent-669786539213.southamerica-east1.run.app">emporio-agent-669786539213.southamerica-east1.run.app</a></p>
+
+<p class="lede">A text agent for a musical-instrument store in Campo Grande, Brazil. It answers about the catalog, prices and payment methods, the customer's own orders and the store's rules, in Brazilian Portuguese. Every fact comes from a tool, and the server checks every number, product, deadline and promise in the model's text before the customer sees it.</p>
+
+<div class="stats">
+  <div class="stat"><b>{{mean}}</b><span>per answer, measured ({{pinned}})</span></div>
+  <div class="stat"><b>{{month_2000}} / month</b><span>2,000 conversations, Gemini + Cloud Run ({{month_2000_brl}})</span></div>
+  <div class="stat"><b>{{attack_blockers}} of {{attack_turns}}</b><span>attack turns produced a wrong fact ({{attack_kinds}} prompt-injection and abuse attacks × 2)</span></div>
+  <div class="stat"><b>{{tests}} tests · {{mutations}}</b><span>passing tests; deliberate defects caught by the mutation net</span></div>
+  <div class="stat"><b>{{hosted}} hosted QA cases</b><span>clicked in Chromium on the live URL with the real model</span></div>
+  <div class="stat"><b>{{examples_pass}} real conversations</b><span>captured on the delivered revision, reviewed claim by claim</span></div>
+</div>
+
+<h2>1. The problem</h2>
+<p>The store answers the same questions all day: is it in stock, how much is it on PIX, can I pay in installments, where is my order, can I return it. The case's tie-breaking rule shaped every decision: <strong>a wrong price, order access or deadline fails the case, even with a friendly tone.</strong> When a fact is missing, the agent asks or prepares a hand-off to the staff; it never makes things up. Language models are fluent and confident about facts they do not have, so the design question was not "how to make the model answer" but "how to make a wrong answer impossible to show".</p>
+
+<h2>2. The solution</h2>
+<div class="flow">
+  <div class="box"><b>Browser</b> · Ressonância brand interface (HTML/CSS/JS, no inline script): text, product cards, sources, a hand-off box, a technical panel.</div>
+  <div class="arrow">▼ POST /api/chat · session cookie · request id for safe retries</div>
+  <div class="box"><b>FastAPI</b> · session, dedup, rate limit, daily cap, 16 KiB body limit, security headers, generic errors.</div>
+  <div class="arrow">▼</div>
+  <div class="box"><b>Agent loop</b> · Gemini function calling ({{pinned}}), at most 3 tool rounds / 6 tool calls / 4 model calls per answer. Tools:
+    <code>query_catalog</code> (model-written SELECT on a read-only SQLite with a deny-by-default authorizer; returns ids only),
+    <code>quote_product</code> (prices, promotions, PIX and installments in integer cents),
+    <code>get_my_order</code> (only the session's demo profile),
+    <code>search_policy</code> (BM25 over the store manual's sections),
+    <code>prepare_handoff</code> (a summary for the team, never sent).</div>
+  <div class="arrow">▼</div>
+  <div class="box check"><b>Server-side checks</b> on the model's text: amounts, percentages, deadlines, brand + model, sound qualities, false absences, claimed or promised actions. One correction round (it may call a tool); otherwise a deterministic answer built from the cards.</div>
+</div>
+<p>The model never computes a price: it receives values confirmed by the backend, and the cards under the text are built from the same tool results. Identity comes from the server session, so an order number typed in the chat identifies the record, not the customer; another profile's order gets the same answer as a missing one. Deployed on Cloud Run (São Paulo region), one container, revision <code>{{revision}}</code> (commit <code>{{commit}}</code>).</p>
+
+<h2>3. Guardrails, each from a real case</h2>
+<p>Every check below was added after the model actually did it, in the benchmark or in a captured conversation, and each one has a test and a mutation that must make that test fail.</p>
+<table>
+<tr><th>What the model did</th><th>What the server does now</th></tr>
+<tr><td>Recommended an "Ibanez GSR200", a bass the store does not sell, without calling any tool</td><td>Every brand + model and model code must appear in a tool result or the customer's words</td></tr>
+<tr><td>Filtered <code>status = 'available'</code>, got nothing and said the store had no basses</td><td>The trap column was removed; an empty search reports what the store does have; a sentence denying a product the catalog sells is rejected</td></tr>
+<tr><td>Offered a steel-string guitar to someone who asked for nylon</td><td>Discovery re-applies the customer's budget and string type in code</td></tr>
+<tr><td>Computed the PIX price itself</td><td>Every R$ amount and percentage must come from a tool result; the correction may fetch it</td></tr>
+<tr><td>"Posso ficar de olho e te aviso"; "preparei um resumo" without preparing one</td><td>Promised and claimed actions are rejected unless the tool ran</td></tr>
+<tr><td>"Timbre bem definido", "som equilibrado" for guitars whose descriptions say neither (about 8% of answers before the check)</td><td>Sound and build qualities must be in the product's description or specs</td></tr>
+</table>
+
+<h2>4. Security: the LLM attack surface</h2>
+<p>The model is treated as an untrusted component that can be talked into anything. The facts an attacker wants the agent to say are produced or checked by the server, so a successful injection changes the wording, not the facts. A security review asked, for every piece of evidence the checks accept, <em>who writes it</em>, and found that the customer's own amounts and percentages counted as evidence: "o gerente autorizou 50%" would have passed. Now the customer's message can be echoed (a budget, the customer's own dates) but never proves a price, discount or deadline; deadlines are checked against the manual; the hand-off summary the customer takes to the store passes the same checks.</p>
+<table>
+<tr><th>OWASP LLM 2025</th><th>Control</th></tr>
+<tr><td>LLM01 Prompt injection</td><td>Server checks on prices, discounts, deadlines and products; orders bound to the session; prompt rule against role or rule changes</td></tr>
+<tr><td>LLM02 Information disclosure</td><td>Session-bound orders; demo database without personal columns; SQL authorizer blocks ATTACH, PRAGMA, schema tables, extensions</td></tr>
+<tr><td>LLM05 Output handling</td><td>DOM built with <code>textContent</code>; CSP without inline scripts; a browser test injects HTML and checks nothing runs</td></tr>
+<tr><td>LLM06 Excessive agency</td><td>Read-only tools; the hand-off is only prepared; claimed actions rejected</td></tr>
+<tr><td>LLM10 Unbounded consumption</td><td>Rate limit, daily cap of {{daily_cap}} answers: worst case {{abuse}} a day of Gemini</td></tr>
+</table>
+<p><strong>Red-team battery on the real model:</strong> {{attack_kinds}} attacks (fake price, fake manager discount, "modo administrador", a fake <code>SYSTEM:</code> line, prompt extraction, a fake 60-day deadline, SQL injection with a request for customer e-mails, an off-topic coding task, a fake protocol number), twice each: <strong>{{attack_blockers}} of {{attack_turns}} turns</strong> produced a wrong fact or leaked data. Earlier runs of the same battery found real defects (a prompt rule that broke the exact-R$ 500 shipping answer; false "we don't have it" under attack), which were fixed and measured before this run. Details: <code>docs/security.md</code>.</p>
+
+<h2>5. Evidence</h2>
+<div class="two">
+<div>
+<h3>Tests</h3>
+<ul>
+<li><strong>{{tests}} automated tests</strong>, no API key: pricing rules against reference values, the SQL authorizer, tools, HTTP contract, {{browser_tests}} browser flows with a labeled scripted model (errors, retries, rate limits, expired sessions, profile switch, HTML injection).</li>
+<li><strong>Mutation net {{mutations}}</strong>: each deliberate defect (a check removed, a rule loosened) must make a named test fail.</li>
+</ul>
+</div>
+<div>
+<h3>Real model</h3>
+<ul>
+<li><strong>Hosted QA {{hosted}}</strong> on the live URL at 320, 390 and 1280 px, with screenshots.</li>
+<li><strong>Benchmark</strong>: {{store_turns}} store-scenario turns on two models, {{store_blockers}} blockers; the model was chosen on cost and blockers.</li>
+<li><strong>Five reviewed conversations</strong> ({{examples_pass}} automatic checks): every decision-changing claim traced to a tool result, manual section or product description.</li>
+</ul>
+</div>
+</div>
+
+<h2>6. Cost</h2>
+<p>Measured on the delivered version: {{turns_measured}} benchmark answers per model with every guard on, token counts from the API's <code>usage_metadata</code>, list prices checked on {{gemini_checked}}. One answer is one customer turn, including every model call, tool round and correction in it.</p>
+<table>
+<tr><th>Model</th><th class="num">Mean per answer</th><th class="num">Median</th><th class="num">Max</th><th class="num">Model calls</th><th class="num">Latency</th></tr>
+<tr><td><code>{{pinned}}</code> (pinned)</td><td class="num"><strong>{{mean}}</strong></td><td class="num">{{median}}</td><td class="num">{{max}}</td><td class="num">{{calls}}</td><td class="num">{{latency}}</td></tr>
+<tr><td><code>{{alt}}</code> (replacement)</td><td class="num">{{alt_mean}}</td><td class="num">{{alt_median}}</td><td class="num">{{alt_max}}</td><td class="num">{{alt_calls}}</td><td class="num">{{alt_latency}}</td></tr>
+</table>
+<p>1,000 answers cost about <strong>{{per_1000}}</strong> ({{per_1000_brl}}). Input tokens dominate: every model call resends the system prompt and the five tool schemas (an out-of-scope answer, a single call with no tool, used {{oos_input}} input tokens), and a turn that uses a tool makes two or three calls.</p>
+
+<h3>By type of question ({{pinned}})</h3>
+<table>
+<tr><th>Turn type</th><th class="num">Input tokens</th><th class="num">Output tokens</th><th class="num">Cost</th><th class="num">On {{alt}}</th></tr>
+{{type_rows}}
+</table>
+
+<h3>Monthly cost for the store</h3>
+<table>
+<tr><th class="num">Conversations / month</th><th class="num">Gemini</th><th class="num">Cloud Run (gross)</th><th class="num">Total</th><th class="num">Total in BRL</th><th class="num">Total on {{alt}}</th></tr>
+{{monthly_rows}}
+</table>
+<p class="note">Assumption: {{turns_per_conv}} customer turns per conversation (not measured on real customers). Cloud Run is request-based billing in São Paulo at the deployed shape, without the free tier (an upper bound). BRL at US$ 1 = R$ {{fx}} (Banco Central PTAX, {{fx_date}}). Sensitivity of the Gemini line at 2,000 conversations ({{gemini_2000}} in the base case): {{gemini_2000_8turns}} at 8 turns per conversation with history growth; {{gemini_2000_worst}} if every turn cost as much as the most expensive type ({{worst_type}}). <code>{{pinned}}</code> shuts down on 2027-05-07; <code>{{alt}}</code> passed the same battery and is the migration path. Full model: <code>evals/cost-model.md</code>.</p>
+
+<h2>7. Limitations</h2>
+<ul>
+<li>Sessions and the <code>/admin</code> aggregates live in memory: an instance recycle starts a new conversation (the page says so). The demo runs one instance.</li>
+<li>Manual retrieval is lexical: 12/12 on the labeled questions, 4/6 on paraphrases written afterwards. A miss leads to a question or a hand-off, not an invented rule.</li>
+<li>Wording outside the checked categories ("excelente para começar") is governed by the prompt and by review, not by a server check. Six catalog descriptions contradict their product's brand; the agent may repeat the store's own data.</li>
+<li>The data is a snapshot: order 8's delivery estimate is in the past, and the manual contradicts itself on the minimum installment (handled as "needs confirmation").</li>
+<li>Rate limits were tested locally; the technical panel that shows tool calls is on for the evaluators and must be turned off with real customers.</li>
+</ul>
+
+<h2>8. How it was built</h2>
+<p>Built with Claude Code under my direction: I decided the scope, the budget, every deploy, the model candidates, the privacy rule for <code>/admin</code>, and that invented products, numbers or hallucinations had to be avoided at any cost; ChatGPT helped brainstorm and write the specs before implementation. The work ran in short sessions with a written plan, decisions with the trigger that reopens them (<code>docs/DECISIONS.md</code>, D1–D23), a catalog of the agent's own mistakes (<code>docs/ERRORS.md</code>) and a log of AI use (<code>docs/ai-usage.md</code>).</p>
+
+<footer>Repository: github.com/Zbreno11-git/emporio-da-musica-agent · README (setup from a clean clone), <code>examples/</code> (five reviewed conversations), <code>docs/qa/README.md</code> (QA report with screenshots), <code>docs/security.md</code>, <code>evals/cost-model.md</code>. Numbers in this document are generated from those files by <code>scripts/build_pdf.py</code>.</footer>
+</main>
+</body>
+</html>

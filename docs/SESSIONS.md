@@ -322,7 +322,8 @@ If the work runs late, cut in this order (unchanged):
 - CSP blocks the fonts or the JSON → read the console errors captured by Playwright.
 - The body limit breaks the TestClient → test with a raw `Content-Length`.
 
-### S8 · Capture, review, delivery (Tue 03/11, done by 20:00 SP) [URL] → C10
+### ✅ S8 · Capture, review, delivery (done 2026-10-31) [URL] → C10 (waits for Breno's submission)
+- **Done 2026-10-31 19:15 SP:** debts closed; D23 LLM-attack hardening with a red-team battery; revision `00010-x5j`; hosted QA 13/13; five conversations captured, translated and reviewed; README; clean clone; delivery PDF and e-mail text. Breno uploads the PDF and replies to the e-mail.
 - **In progress (2026-10-31 17:50 SP):** capture taken on `00006-z4v` (5/5), hosted QA 12/12; the remaining steps and open debts (HEAD 405, policy sources on follow-up turns) are listed in order in the `PROGRESS.md` resume block.
 
 1. **8.1 Capture.** `scripts/capture_examples.py` drives the hosted URL and writes 5 conversations to `examples/NN-*.md`:
