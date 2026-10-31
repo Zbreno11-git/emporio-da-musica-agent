@@ -180,6 +180,8 @@ MUTATIONS = [
      "tests/evals/test_benchmark_checks.py::test_false_absence_of_a_sold_product_is_a_blocker"),
     (A, "    problems = check_text(args.summary, state, state.context_cents)\n", "    problems = []\n",
      f"{TH}::test_handoff_summary_with_an_unsupported_fact_is_refused"),
+    (A, '                 "equilibrad", "versatil",', '                 "versatil",',
+     f"{TPM}::test_balanced_sound_is_a_quality_claim"),
 ]
 
 

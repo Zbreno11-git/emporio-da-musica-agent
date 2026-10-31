@@ -1,18 +1,18 @@
 {
   "meta": {
     "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
-    "revision": "emporio-agent-00007-tgf",
-    "commit": "415b4c8",
+    "revision": "emporio-agent-00008-hmr",
+    "commit": "fd32f27",
     "model": "gemini-3.1-flash-lite",
     "dataset_id": "1412d32a6eeb",
     "screenshot": "screens/04-return-policy-390.png",
-    "captured": "2026-10-31 18:28"
+    "captured": "2026-10-31 18:38"
   },
   "turns": [
     {
       "message": "Comprei online e me arrependi. Posso devolver?",
-      "request_id": "ec8dfaa9-0fd6-4913-b885-046b93f516cd",
-      "text": "Para compras feitas online, nossa política permite a devolução por arrependimento em até 7 dias corridos após o recebimento, desde que o produto esteja na embalagem original e sem sinais de uso. Em que dia o instrumento chegou até você?",
+      "request_id": "6ad9f6a9-eca8-4cc0-ae56-8595a954b2de",
+      "text": "Para compras online, a nossa política prevê o direito de arrependimento com solicitação de devolução em até sete dias corridos após o recebimento do instrumento. Como esse prazo já começou a contar, em que dia o produto chegou para ti?",
       "cards": [],
       "sources": [
         {
@@ -40,7 +40,7 @@
       "next_action": "clarify",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 2048,
+        "duration_ms": 1947,
         "model_calls": 2,
         "tool_rounds": 1,
         "tools": [
@@ -63,51 +63,42 @@
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.42,
-      "seconds": 2.42
+      "_seconds": 2.21,
+      "seconds": 2.21
     },
     {
       "message": "Chegou anteontem, dia 29/10.",
-      "request_id": "845af9c1-db9c-4e3d-871b-f93357762aa2",
-      "text": "Está tudo pronto! Você pode levar este resumo ao nosso time no WhatsApp (67) 3321-4500 para seguirem com os próximos passos da tua devolução. Precisas de ajuda com mais alguma coisa por aqui?",
+      "request_id": "9e8af9e6-ca62-4049-b915-fcd1a3f318e2",
+      "text": "Como a entrega foi no dia 29/10, você ainda está dentro do prazo de sete dias corridos! Para prosseguir com a devolução, o instrumento precisa estar na embalagem original, sem sinais de uso e acompanhado de todos os acessórios e manuais. Você gostaria que eu preparasse um resumo dessa solicitação para a nossa equipe entrar em contato?",
       "cards": [],
-      "sources": [],
-      "next_action": "contact_store",
-      "handoff": {
-        "reason": "requires_staff",
-        "summary": "Cliente deseja realizar devolução de compra online recebida em 29/10. O prazo está dentro dos 7 dias previstos na política 4.1.",
-        "channel_label": "WhatsApp de atendimento (manual da loja, seção 7)",
-        "destination": "(67) 3321-4500",
-        "delivery_status": "prepared"
-      },
+      "sources": [
+        {
+          "type": "policy",
+          "id": "4.1",
+          "label": "Manual da loja, seção 4.1 (consultada na mensagem anterior)",
+          "page_start": 4,
+          "page_end": 4
+        }
+      ],
+      "next_action": "clarify",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 2292,
-        "model_calls": 2,
-        "tool_rounds": 1,
-        "tools": [
-          {
-            "name": "prepare_handoff",
-            "args": {
-              "summary": "Cliente deseja realizar devolução de compra online recebida em 29/10. O prazo está dentro dos 7 dias previstos na política 4.1.",
-              "reason": "requires_staff"
-            },
-            "ok": true,
-            "ms": 0
-          }
-        ],
+        "duration_ms": 1144,
+        "model_calls": 1,
+        "tool_rounds": 0,
+        "tools": [],
         "usage": {
-          "input": 7967,
-          "output": 192,
+          "input": 3876,
+          "output": 76,
           "thoughts": 0,
-          "total": 8159
+          "total": 3952
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.54,
-      "seconds": 2.54
+      "_seconds": 1.39,
+      "seconds": 1.39
     }
   ],
   "checks": [

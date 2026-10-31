@@ -1,24 +1,24 @@
 {
   "meta": {
     "url": "https://emporio-agent-669786539213.southamerica-east1.run.app",
-    "revision": "emporio-agent-00007-tgf",
-    "commit": "415b4c8",
+    "revision": "emporio-agent-00008-hmr",
+    "commit": "fd32f27",
     "model": "gemini-3.1-flash-lite",
     "dataset_id": "1412d32a6eeb",
     "screenshot": "screens/03-authorized-order-390.png",
-    "captured": "2026-10-31 18:28"
+    "captured": "2026-10-31 18:38"
   },
   "turns": [
     {
       "message": "Onde está o meu pedido 8?",
-      "request_id": "ba98e6fc-cba4-4a9f-8d6c-ec7d80ad306c",
-      "text": "Para que eu possa consultar o status do teu pedido, você precisa selecionar um perfil de demonstração na interface aqui do nosso chat. Pode escolher um para mim?",
+      "request_id": "00272b54-6e1d-480d-9746-7ffb6b282ab1",
+      "text": "Para que eu possa consultar o status do teu pedido, preciso que você selecione um dos perfis de demonstração disponíveis aqui na nossa interface. Assim que você fizer isso, consigo verificar as informações desse pedido 8 para ti!",
       "cards": [],
       "sources": [],
       "next_action": "choose_profile",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 1756,
+        "duration_ms": 1963,
         "model_calls": 2,
         "tool_rounds": 1,
         "tools": [
@@ -33,22 +33,22 @@
         ],
         "usage": {
           "input": 6196,
-          "output": 50,
+          "output": 64,
           "thoughts": 0,
-          "total": 6246
+          "total": 6260
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.14,
-      "seconds": 2.14
+      "_seconds": 2.25,
+      "seconds": 2.25
     },
     {
       "message": "Onde está o meu pedido 8?",
       "profile": "Cliente A · pedido em transporte",
-      "request_id": "ae174099-8527-4a75-9f7a-fd1ddd179e8e",
-      "text": "O teu pedido número 8, que contém um ukulele Kala KA-C Concert Mogno, consta como enviado com o código de rastreio BRJL5544332BR. A previsão registrada para a entrega era 28 de fevereiro de 2026. Como essa data já passou, quer que eu prepare um resumo para nossa equipe analisar o que aconteceu com o teu envio?",
+      "request_id": "c5a312e6-3e1a-409d-864d-a6bfaa7a2215",
+      "text": "O seu pedido 8, que contém um Kala KA-C Concert Mogno, está como enviado e o código de rastreio é BRJL5544332BR. A previsão registrada para a entrega era 28/02/2026, mas essa data é uma estimativa do sistema e não um rastreio em tempo real. Como essa data já passou, quer que eu prepare um resumo para nossa equipe dar uma olhada no que aconteceu?",
       "cards": [],
       "sources": [
         {
@@ -60,7 +60,7 @@
       "next_action": "clarify",
       "trace": {
         "model": "gemini-3.1-flash-lite",
-        "duration_ms": 2029,
+        "duration_ms": 2052,
         "model_calls": 2,
         "tool_rounds": 1,
         "tools": [
@@ -75,16 +75,16 @@
         ],
         "usage": {
           "input": 6290,
-          "output": 101,
+          "output": 118,
           "thoughts": 0,
-          "total": 6391
+          "total": 6408
         },
         "text_corrected": false,
         "text_fallback": false,
         "check_problems": []
       },
-      "_seconds": 2.29,
-      "seconds": 2.29
+      "_seconds": 2.3,
+      "seconds": 2.3
     }
   ],
   "checks": [

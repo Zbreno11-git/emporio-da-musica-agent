@@ -13,29 +13,29 @@ One answer is one customer turn: every model call, tool round and server-side te
 
 | Model | Turns measured | Mean | Median | Max | Model calls per turn | Mean turn latency |
 | --- | --- | --- | --- | --- | --- | --- |
-| `gemini-3.1-flash-lite` | 18 | US$ 0.00202 | US$ 0.00183 | US$ 0.00309 | 2.22 | 2.25 s |
-| `gemini-3.5-flash-lite` | 18 | US$ 0.00269 | US$ 0.00228 | US$ 0.00446 | 2.39 | 1.73 s |
+| `gemini-3.1-flash-lite` | 18 | US$ 0.00207 | US$ 0.00184 | US$ 0.00307 | 2.28 | 1.93 s |
+| `gemini-3.5-flash-lite` | 18 | US$ 0.00274 | US$ 0.00229 | US$ 0.00447 | 2.44 | 1.70 s |
 
-On the pinned model, **1,000 answers cost about US$ 2.02 (R$ 10,94)**.
+On the pinned model, **1,000 answers cost about US$ 2.07 (R$ 11,23)**.
 
-**Abuse bound (denial of wallet, docs/security.md).** The public demo stops answering after 400 turns a day for the whole process (`MAX_TURNS_PER_DAY`), so a scripted attacker can spend at most 400 × US$ 0.00309 (the most expensive measured turn) = **US$ 1.24 a day (R$ 6,70)** of Gemini.
+**Abuse bound (denial of wallet, docs/security.md).** The public demo stops answering after 400 turns a day for the whole process (`MAX_TURNS_PER_DAY`), so a scripted attacker can spend at most 400 × US$ 0.00307 (the most expensive measured turn) = **US$ 1.23 a day (R$ 6,65)** of Gemini.
 
 ## 2. Cost per turn type
 
 | Turn type | Model | Turns | Avg input tokens | Avg output + thinking tokens | Avg cost per turn |
 | --- | --- | --- | --- | --- | --- |
-| quote | `gemini-3.1-flash-lite` | 6 | 7,749 | 101 | US$ 0.00209 |
-| quote | `gemini-3.5-flash-lite` | 6 | 9,600 | 112 | US$ 0.00316 |
-| catalog search | `gemini-3.1-flash-lite` | 2 | 6,756 | 93 | US$ 0.00183 |
-| catalog search | `gemini-3.5-flash-lite` | 2 | 6,934 | 120 | US$ 0.00238 |
-| order | `gemini-3.1-flash-lite` | 4 | 6,236 | 78 | US$ 0.00168 |
-| order | `gemini-3.5-flash-lite` | 4 | 6,236 | 69 | US$ 0.00204 |
-| policy | `gemini-3.1-flash-lite` | 2 | 6,882 | 86 | US$ 0.00185 |
-| policy | `gemini-3.5-flash-lite` | 2 | 6,750 | 72 | US$ 0.00220 |
-| handoff | `gemini-3.1-flash-lite` | 2 | 11,017 | 214 | US$ 0.00308 |
-| handoff | `gemini-3.5-flash-lite` | 2 | 11,022 | 204 | US$ 0.00382 |
-| out of scope | `gemini-3.1-flash-lite` | 2 | 6,680 | 74 | US$ 0.00178 |
-| out of scope | `gemini-3.5-flash-lite` | 2 | 6,686 | 100 | US$ 0.00225 |
+| quote | `gemini-3.1-flash-lite` | 6 | 8,355 | 106 | US$ 0.00225 |
+| quote | `gemini-3.5-flash-lite` | 6 | 10,209 | 110 | US$ 0.00334 |
+| catalog search | `gemini-3.1-flash-lite` | 2 | 6,760 | 102 | US$ 0.00184 |
+| catalog search | `gemini-3.5-flash-lite` | 2 | 6,926 | 104 | US$ 0.00234 |
+| order | `gemini-3.1-flash-lite` | 4 | 6,236 | 76 | US$ 0.00167 |
+| order | `gemini-3.5-flash-lite` | 4 | 6,236 | 65 | US$ 0.00203 |
+| policy | `gemini-3.1-flash-lite` | 2 | 6,882 | 88 | US$ 0.00185 |
+| policy | `gemini-3.5-flash-lite` | 2 | 6,749 | 73 | US$ 0.00221 |
+| handoff | `gemini-3.1-flash-lite` | 2 | 11,014 | 202 | US$ 0.00306 |
+| handoff | `gemini-3.5-flash-lite` | 2 | 11,020 | 193 | US$ 0.00379 |
+| out of scope | `gemini-3.1-flash-lite` | 2 | 6,680 | 82 | US$ 0.00179 |
+| out of scope | `gemini-3.5-flash-lite` | 2 | 6,686 | 90 | US$ 0.00223 |
 
 Input dominates. Every model call carries the system prompt and the five tool schemas: the out-of-scope turns, a single call with no tool, used 6,680 input tokens. A turn that uses a tool makes two or three calls, and each one resends that prefix plus the tool results.
 
@@ -45,15 +45,15 @@ Input dominates. Every model call carries the system prompt and the five tool sc
 
 | Conversations / month | Gemini (`gemini-3.1-flash-lite`) | Cloud Run, gross (upper bound) | Cloud Run after the free tier | Total | Total (BRL) |
 | --- | --- | --- | --- | --- | --- |
-| 500 | US$ 4.03 | US$ 0.18 | US$ 0.05 | US$ 4.21 | R$ 22,85 |
-| 2,000 | US$ 16.14 | US$ 0.72 | US$ 0.20 | US$ 16.86 | R$ 91,38 |
-| 10,000 | US$ 80.69 | US$ 3.60 | US$ 1.01 | US$ 84.28 | R$ 456,91 |
+| 500 | US$ 4.14 | US$ 0.16 | US$ 0.04 | US$ 4.30 | R$ 23,30 |
+| 2,000 | US$ 16.56 | US$ 0.63 | US$ 0.18 | US$ 17.19 | R$ 93,20 |
+| 10,000 | US$ 82.82 | US$ 3.13 | US$ 0.88 | US$ 85.96 | R$ 466,00 |
 
 Total uses Cloud Run **gross** (no free tier), the conservative figure.
-Arithmetic check: US$ 0.002017 × 4 × 2,000 = US$ 16.14.
+Arithmetic check: US$ 0.002071 × 4 × 2,000 = US$ 16.56.
 
 **Cloud Run line.** Request-based billing in `southamerica-east1` (Tier 2): US$ 0.0000336 per vCPU-second, US$ 0.0000035 per GiB-second and US$ 0.40 per million requests, with the deployed shape (1 vCPU, 0.5 GiB, min instances 0).
-- Billable time per conversation = turns × mean turn latency (2.25 s) + 1 s for the page load.
+- Billable time per conversation = turns × mean turn latency (1.93 s) + 1 s for the page load.
 - Requests = turns + 10 static/session requests.
 - This is an **upper bound**: with concurrency 20, overlapping requests share billed instance time.
 - The free tier (180,000 vCPU-s, 360,000 GiB-s and 2 million requests a month) belongs to the billing account and is shared with its other projects, so the gross figure is the safe one to budget.
@@ -62,20 +62,20 @@ Arithmetic check: US$ 0.002017 × 4 × 2,000 = US$ 16.14.
 
 | Conversations / month | 4 turns (base) | 2 turns | 8 turns | 8 turns with history growth | Every turn at the most expensive type |
 | --- | --- | --- | --- | --- | --- |
-| 500 | US$ 4.03 | US$ 2.02 | US$ 8.07 | US$ 10.09 | US$ 6.15 |
-| 2,000 | US$ 16.14 | US$ 8.07 | US$ 32.27 | US$ 40.35 | US$ 24.60 |
-| 10,000 | US$ 80.69 | US$ 40.34 | US$ 161.37 | US$ 201.76 | US$ 123.01 |
+| 500 | US$ 4.14 | US$ 2.07 | US$ 8.28 | US$ 16.66 | US$ 6.11 |
+| 2,000 | US$ 16.56 | US$ 8.28 | US$ 33.13 | US$ 66.65 | US$ 24.45 |
+| 10,000 | US$ 82.82 | US$ 41.41 | US$ 165.65 | US$ 333.23 | US$ 122.25 |
 
-- **History growth:** each earlier turn kept in history added about 577 input tokens to the next turn (Takamine step 0 → 1, the only multi-turn pair measured). History is capped at 10 turns. The benchmark's mean already includes that pair, so this column slightly double-counts.
-- **Most expensive type:** US$ 0.00308 per turn on the pinned model.
+- **History growth:** each earlier turn kept in history added about 2,394 input tokens to the next turn (Takamine step 0 → 1, the only multi-turn pair measured). History is capped at 10 turns. The benchmark's mean already includes that pair, so this column slightly double-counts.
+- **Most expensive type:** US$ 0.00306 per turn on the pinned model.
 
 ## 5. Model lines
 
 | Conversations / month | `gemini-3.1-flash-lite` (pinned) | `gemini-3.5-flash-lite` (replacement) |
 | --- | --- | --- |
-| 500 | US$ 4.03 | US$ 5.38 |
-| 2,000 | US$ 16.14 | US$ 21.53 |
-| 10,000 | US$ 80.69 | US$ 107.65 |
+| 500 | US$ 4.14 | US$ 5.48 |
+| 2,000 | US$ 16.56 | US$ 21.91 |
+| 10,000 | US$ 82.82 | US$ 109.54 |
 
 - `gemini-3.1-flash-lite` shuts down on 2027-05-07; Google's recommended replacement `gemini-3.5-flash-lite` passed every blocker in the benchmark at the cost shown.
 - `gemini-3.6-flash` (no quality notes, about 5× the cost per turn, 3.6× the median latency) doubles its price on 2027-01-01; it is not projected here.

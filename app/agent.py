@@ -462,7 +462,10 @@ def product_reference_problems(text: str, evidence: str) -> list[str]:
 # specs of a product from this conversation (accent-insensitive stems). Real case: "timbre bem definido" for a guitar
 # whose description only mentions "projeção sonora" (capture of 2026-10-31).
 QUALITY_STEMS = ("timbre", "sonoridade", "encorpad", "projec", "sustain", "graves", "agudos", "brilhant", "aveludad",
-                 "quente", "resistent", "duravel", "durabilidade", "robust", "confortavel", "conforto")
+                 "quente", "resistent", "duravel", "durabilidade", "robust", "confortavel", "conforto",
+                 # added after the final capture review: "som clássico e equilibrado" for the C40 (4 of 4 stored uses
+                 # unsupported); "versátil" is in the Music Man descriptions (3 of 3 uses supported)
+                 "equilibrad", "versatil", "potente", "nitid", "cristalin", "profund", "suave", "macio", "vibrante")
 _WORD_RE = re.compile(r"[a-z]+")
 
 

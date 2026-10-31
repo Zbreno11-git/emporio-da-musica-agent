@@ -78,3 +78,8 @@ def test_quality_backed_by_the_description_passes_with_accents_folded():
 
 def test_ordinary_words_are_not_quality_claims():
     assert quality_problems("Quer que eu prepare um resumo? O prazo é de sete dias corridos.", C40) == []
+
+
+def test_balanced_sound_is_a_quality_claim():
+    """Final capture review (2026-10-31): "som clássico e equilibrado" for the C40; its description has no such word."""
+    assert any("equilibrad" in p for p in quality_problems("Muito bacana para quem busca um som equilibrado.", C40))
