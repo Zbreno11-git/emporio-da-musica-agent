@@ -49,3 +49,5 @@ The battery itself got stricter: an invented product (not in the catalog) is a b
 **Result.** `gemini-3.1-flash-lite` stays pinned (D14). The cost per turn rose about 11% over the baseline (longer prompt, occasional correction rounds); the [cost model](cost-model.md) uses these delivered-version turns. Takamine still answers R$ 2.199,00 → R$ 2.089,05 on PIX in both runs.
 
 **Not covered by an automatic check.** Product characteristics in free text (for example "tampo em cedro sólido", which came from the catalog description in every case read) are only governed by the prompt; the S8 `/qa-response` review checks them against the tool results.
+
+**Check before the S7 deploy (2026-10-31).** One more run on `gemini-3.1-flash-lite` after adding "product characteristics only from the tool's description and specs" to the prompt: 9/9 turns, 0 blockers, 0 quality notes, US$ 0.00188 per turn, median 1.78 s ([`benchmark/*-s7.jsonl`](benchmark/)).
