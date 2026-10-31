@@ -8,6 +8,7 @@
 | --- | --- | --- | --- |
 | 1 | A test passed for a reason other than the rule it claimed to protect | 3 | Run the mutation that removes the rule; the named test must fail |
 | 2 | Recommended a date without doing the calendar math | 1 | Before proposing a deadline, compute the weekday and the business-day rule from the source text |
+| 3 | Took a spec value as valid on the hosting platform without checking the platform's constraints | 1 | Before deploying a route or setting, check it against the target platform's documented limits; verify on the URL, not only locally |
 
 ---
 
@@ -30,3 +31,11 @@
 > **A deadline is a calculation from a source text, not an option to pick.**
 
 **The antidote:** quote the source sentence and run `date` or `python -c` for the weekday before proposing any deadline.
+
+### 3. Took a spec value as valid on the hosting platform without checking the platform's constraints
+
+**2026-10-31 — `/healthz` on Cloud Run.** Guide 02 specified `GET /healthz`. It worked locally and in tests, but on the first Cloud Run revision it returned Google's own 404 page: Cloud Run's front end reserves paths ending in `z`. The check on the public URL caught it before anything depended on it. The app now also serves `/health`, the hosted check uses that, and both paths are tested.
+
+> **A local green check does not prove the route exists on the platform.**
+
+**The antidote:** run every endpoint check against the hosted URL after each deploy (C6/C9), and read the platform's reserved-paths list before naming routes.

@@ -196,9 +196,10 @@ def test_rate_limit_is_429(settings):
     assert codes == [200, 200, 429]
 
 
-def test_healthz_reports_dataset(settings):
+@pytest.mark.parametrize("path", ["/health", "/healthz"])
+def test_health_reports_dataset(settings, path):
     client, _ = client_for(settings, [])
-    body = client.get("/healthz").json()
+    body = client.get(path).json()
     assert body["status"] == "ok" and len(body["dataset_id"]) == 12
 
 

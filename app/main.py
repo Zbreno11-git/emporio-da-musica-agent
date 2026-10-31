@@ -63,6 +63,8 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     def index():
         return FileResponse(STATIC / "index.html")
 
+    # Cloud Run's front end reserves paths ending in "z", so the hosted check is /health; /healthz stays for local use.
+    @app.get("/health")
     @app.get("/healthz")
     def healthz():
         try:

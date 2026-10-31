@@ -19,6 +19,8 @@ The agent answers questions about the catalog, prices, payment methods, orders a
 | FastAPI session, dedup, rate limit and public errors | |
 | Orders bound to the session's demo profile; section-level manual retrieval ([evaluation](evals/policy-retrieval.md)); prepared hand-offs | |
 
+**Live demo:** https://emporio-agent-669786539213.southamerica-east1.run.app (Cloud Run, `southamerica-east1`; demo profiles are fictitious; capped at 400 model turns per day).
+
 The roadmap is in [`docs/SESSIONS.md`](docs/SESSIONS.md) and the current state in [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
 ## Stack

@@ -122,6 +122,15 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
   - shipping of exactly R$ 500.
 
   Measures the 3 blockers against oracles and profile, tool and arguments, cold and warm latency, and tokens (`usage_metadata`). Cost only with a price verified that day.
+- **Cost model (D19).** For every benchmark turn, record input, output and thinking tokens and the turn type:
+  - catalog search;
+  - quote / PIX;
+  - order;
+  - policy;
+  - hand-off;
+  - out of scope.
+
+  Fetch the official Gemini price list on the day and compute the cost per turn, the average per answer and the cost per type. Project the monthly cost for the store under 3 stated volume scenarios (e.g. 500, 2,000 and 10,000 conversations/month with a measured turns-per-conversation average). Add Cloud Run from the billing report. Output: `evals/cost-model.md`, which feeds the PDF.
 - **Selection rule (D14):** the cheapest model that passes the 3 blockers in every run; tie → lower median latency.
 - **✅ C7:** `evals/model-benchmark.md`; `GEMINI_MODEL` pinned; spend checked in billing.
 
@@ -155,7 +164,7 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
 - **8.1 Capture.** 5 conversations on the URL (discovery, promotion + PIX, authorized order, return, out of scope) in `examples/*.md`. Each is in PT-BR with an English translation, model, commit, manifest, tools, duration and a screenshot.
 - **8.2 Review.** `/qa-response` on each, with tool results and manual sections. A blocker means fix the cause and capture again.
 - **8.3 Final README.** Setup, decisions, limitations, AI usage, URL and revision; reproduction from a clean clone.
-- **8.4 Delivery PDF.** English, named `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`, with repository link, demo URL, decision summary and examples index. A reply text for the e-mail is also prepared.
+- **8.4 Delivery PDF.** English, named `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`, with repository link, demo URL, decision summary, examples index and the measured cost model (average cost per answer, per turn type, monthly projection). A reply text for the e-mail is also prepared.
 - **✅ C10:** 5/5 without blockers; `scripts/check_staged.py` PASS; `git ls-remote` == HEAD; last commit before 23:59 São Paulo on 2026-11-03; PDF handed to Breno.
 
 ## Risks
