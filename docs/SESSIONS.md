@@ -323,6 +323,8 @@ If the work runs late, cut in this order (unchanged):
 - The body limit breaks the TestClient → test with a raw `Content-Length`.
 
 ### S8 · Capture, review, delivery (Tue 03/11, done by 20:00 SP) [URL] → C10
+- **In progress (2026-10-31 17:50 SP):** capture taken on `00006-z4v` (5/5), hosted QA 12/12; the remaining steps and open debts (HEAD 405, policy sources on follow-up turns) are listed in order in the `PROGRESS.md` resume block.
+
 1. **8.1 Capture.** `scripts/capture_examples.py` drives the hosted URL and writes 5 conversations to `examples/NN-*.md`:
    - discovery (nylon up to R$ 800);
    - promotion + PIX (Kalani);
