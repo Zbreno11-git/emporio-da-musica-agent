@@ -4,7 +4,10 @@ _insumos_privados/
 *.pdf
 *.csv
 
-# Bancos derivados (gerados localmente a partir dos CSVs)
+# Derivados dos dados da Artefact (gerados localmente; ver docs/DECISOES.md, D15)
+data/build/
+data/build.previous/
+data/.build-*/
 *.db
 *.sqlite
 *.sqlite3
