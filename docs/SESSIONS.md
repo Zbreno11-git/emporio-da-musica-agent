@@ -46,7 +46,9 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
 | C6 | First Cloud Run revision answers milestone 1 in an incognito window | URL | C3, C4 |
 | C7 | Benchmark picks and pins `GEMINI_MODEL` | GEM | C4, C5 |
 | C8 | Ressonância UI checked at 320, 390 px and desktop | OFF + GEM | C3 |
-| C9 | Playwright + failure tests green, new revision live | OFF + URL | C6, C8 |
+| C7b | Cost model `evals/cost-model.md` (D19) | OFF | C7 |
+| C8b | `/admin` with token, aggregates only (D20) | OFF + GEM | C8 |
+| C9 | Playwright + failure tests green, QA report with screenshots (D21), new revision live | OFF + URL | C6, C8, C8b |
 | C10 | 5 real conversations on the URL, reviewed, no blocker; final README; clean clone reproduces; delivery PDF ready | URL | C7, C9 |
 
 ---
@@ -149,15 +151,38 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
   UI text is in PT-BR.
 - **✅ C8:** screenshots at 320, 390 and 1280 px; name and price legible; card price == DTO.
 
-### S7 · Browser, failures and second revision (≈1.5 h) [OFF + URL]
-- **Does:** `/webapp-testing` with Playwright in Python and 2 isolated contexts:
+### S6b · `/admin` panel (≈1 h) [OFF + GEM] — D20
+- **Does:** a `TurnMetrics` collector in process memory, filled after each successful turn from the trace. It records:
+  - cost from usage × `evals/pricing.json`;
+  - a topic label derived from the tools and sections (`price/PIX`, `catalog search`, `order`, `return §4.1`, `shipping §5.1`, `hand-off`, `out of scope`, …);
+  - the product ids shown on cards.
+
+  Plus `GET /admin` (HTML) and `GET /admin/api/stats` (JSON), both requiring `ADMIN_TOKEN` (header `X-Admin-Token` or a form that keeps it only in memory). Without a valid token the answer is 404. No raw message text is stored anywhere. The page says "since instance start <time>".
+- **Deploy:** secret `admin-token` created via stdin from a locally generated value; read only by `emporio-agent-sa`; Breno keeps the value in `.env`.
+- **✅** Tests:
+  - no token → 404;
+  - wrong token → 404;
+  - right token → stats whose average cost equals the hand-computed value from fake usage;
+  - the top 3 products follow the card counts;
+  - the topic counts follow the tools;
+  - mutations added for the token check and the "no raw text" rule (a test greps the collector state for the message).
+
+### S7 · Testing and hardening, documented (≈2 h) [OFF + URL] — D21
+- **Does:** install Playwright in `requirements-dev.txt`; then `/webapp-testing` with Playwright in Python and 2 isolated contexts:
   - Takamine → PIX;
   - order 8 as a visitor, with the wrong profile and with a profile switch;
   - provider error via the labeled fake;
   - no `networkidle`, no sleeps.
 
   Failures: 504, 429, empty tool result, resend with the same `request_id`, concurrent 409, and 410.
-- **✅ C9:** `pytest` and `pytest tests/e2e` green; the new revision answers milestone 1.
+- **QA report:** `docs/qa/README.md` with one row per case (id, steps, expected, observed, verdict, screenshot) and the screenshots under `docs/qa/screens/NN-scenario-viewport.png`, taken from the **hosted** revision for the customer flows and from the local app with the labeled fake model for forced failures.
+- **Hardening pass:**
+  - security headers (CSP without inline script if feasible, `X-Content-Type-Options`, `Referrer-Policy`, frame-ancestors);
+  - a request body size limit;
+  - checking `/admin` is not linked anywhere;
+  - error messages without stack traces;
+  - the daily cap and rate limit exercised on the URL with low limits in a test revision, or locally only if that costs too much — decide by cost.
+- **✅ C9:** `pytest` and `pytest tests/e2e` green; QA report complete with screenshots; the new revision answers milestone 1 and `/health`.
 
 ## Day 3 · 2026-11-03 (freeze 23:59 São Paulo)
 

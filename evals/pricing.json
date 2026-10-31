@@ -1,0 +1,15 @@
+{
+  "source": "https://ai.google.dev/gemini-api/docs/pricing (page 'Last updated 2026-10-30 UTC')",
+  "checked_on": "2026-10-31",
+  "unit": "USD per 1M tokens, Standard paid tier, non-batch; thinking tokens are billed as output",
+  "notes": [
+    "gemini-3.5-flash is not on the pricing page: the deprecations page says the endpoint automatically routes to gemini-3.6-flash, so it is benchmarked as gemini-3.6-flash.",
+    "gemini-3.6-flash prices double on 2027-01-01 (input 1.50, output 7.50).",
+    "gemini-3.1-flash-lite shuts down on 2027-05-07; recommended replacement gemini-3.5-flash-lite."
+  ],
+  "models": {
+    "gemini-3.1-flash-lite": {"input_per_mtok": 0.25, "output_per_mtok": 1.50},
+    "gemini-3.5-flash-lite": {"input_per_mtok": 0.30, "output_per_mtok": 2.50},
+    "gemini-3.6-flash": {"input_per_mtok": 0.75, "output_per_mtok": 3.75}
+  }
+}
