@@ -63,7 +63,7 @@ def test_report_is_built_from_the_benchmark_files(tmp_path):
         rows = [row("quote", 6000, 100, 0, scenario="takamine_pix", step=0),
                 row("quote", 6500, 100, 0, scenario="takamine_pix", step=1),
                 row("out_of_scope", 2600, 80, 0)]
-        (tmp_path / f"{cost_model.BENCHMARK_DATE}-{model}.jsonl").write_text(
+        (tmp_path / f"{cost_model.BENCHMARK_DATE}-{model}{cost_model.BENCHMARK_SUFFIX}.jsonl").write_text(
             "".join(json.dumps(r) + "\n" for r in rows))
     pricing = {"source": "s", "checked_on": "d", "unit": "u",
                "models": {m: PRICE for m in cost_model.MODELS},

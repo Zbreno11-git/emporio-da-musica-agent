@@ -115,6 +115,76 @@ def test_wrong_price_in_text_is_corrected_then_falls_back(settings):
     assert body["trace"]["text_fallback"] is True
 
 
+def test_invented_product_is_never_shown(settings):
+    client, _ = client_for(settings, [
+        say("Não vendemos amplificador, mas o Ibanez GSR200 é ótimo para começar."),  # no tool was called
+        say("Recomendo o GSR200 mesmo."),  # the corrective attempt keeps the invented model
+    ])
+    body = chat(client, "Vocês vendem amplificador? Se não, podem me indicar um baixo?").json()
+    assert "GSR200" not in body["text"]
+    assert body["trace"]["text_fallback"] is True
+
+
+def test_product_from_tool_result_or_customer_words_is_accepted(settings):
+    client, _ = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE product_id = 136", params=[], intent="lookup"),
+        say("Temos o Ibanez Bass 2X, um baixo de 4 cordas."),
+    ])
+    body = chat(client, "Tem baixo Ibanez?").json()
+    assert body["trace"]["text_corrected"] is False and "Ibanez Bass 2X" in body["text"]
+
+    # A follow-up turn names the product from session memory, without a new catalog call.
+    client, _ = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE product_id = 136", params=[], intent="lookup"),
+        say("Temos o Ibanez Bass 2X."),
+        call("quote_product", product_id=136, method="pix"),
+        say("O Ibanez Bass 2X também pode ser pago no PIX."),
+    ])
+    chat(client, "Tem baixo Ibanez?")
+    body = chat(client, "e no PIX?").json()
+    assert body["trace"]["text_corrected"] is False and "Ibanez Bass 2X" in body["text"]
+
+    client, _ = client_for(settings, [say("Não encontrei a Fender Stratocaster aqui. Quer ver outras guitarras?")])
+    body = chat(client, "Vocês têm Fender Stratocaster?").json()
+    assert body["trace"]["text_corrected"] is False
+
+
+def test_unconfirmed_price_is_fetched_in_the_correction(settings):
+    """Real case (benchmark 2026-10-31): the model computed the PIX price itself instead of calling the quote."""
+    client, _ = client_for(settings, [
+        call("query_catalog", sql=TAKAMINE_SQL, params=["%takamine gd20%"], intent="lookup"),
+        say("O Takamine GD20 está por R$ 2.199,00."),
+        say("No PIX ele sai por R$ 2.089,05."),  # no quote_product call: the value has no evidence yet
+        call("quote_product", product_id=95, method="pix"),  # the correction fetches it
+        say("No PIX ele sai por R$ 2.089,05."),
+    ])
+    chat(client, "Quanto custa o Takamine GD20?")
+    body = chat(client, "e no PIX?").json()
+    assert body["trace"]["text_corrected"] is True and body["trace"]["text_fallback"] is False
+    assert body["cards"][0]["payment_cents"] == 208905 and "R$ 2.089,05" in body["text"]
+
+
+def test_empty_search_tells_the_model_what_the_store_has(settings):
+    client, llm = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE name_search LIKE '%contrabaixo%'",
+             params=[], intent="discover"),
+        say("Quer que eu procure por categoria?"),
+    ])
+    chat(client, "me indica um baixo")
+    tool_reply = json.dumps([c.model_dump(mode="json") for c in llm.seen[1]], ensure_ascii=False)
+    assert "does not mean the store has none" in tool_reply and "Baixos: 3" in tool_reply
+
+
+def test_promised_action_is_rejected(settings):
+    client, _ = client_for(settings, [
+        say("Não temos agora, mas posso ficar de olho e te aviso quando chegar."),
+        say("Quer que eu procure opções parecidas disponíveis?"),
+    ])
+    body = chat(client, "tem o baixo Ibanez?").json()
+    assert "olho" not in body["text"] and "aviso" not in body["text"]
+    assert body["trace"]["text_corrected"] is True
+
+
 def test_claimed_action_is_rejected(settings):
     client, _ = client_for(settings, [
         say("Pronto, registrei tua troca e o reembolso foi aprovado."),

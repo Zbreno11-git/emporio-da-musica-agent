@@ -24,8 +24,10 @@ Intent = Literal["discover", "lookup", "compare"]
 
 PUBLIC_COLUMNS: dict[str, set[str]] = {
     "categories": {"category_id", "name", "description"},
+    # No "status": it holds the store's raw status ("active"), and a model filtering status = 'available' got an
+    # empty result and told the customer the store had none (benchmark 2026-10-31). Availability is canonical.
     "products": {"product_id", "category_id", "name", "name_search", "description", "specs", "stock_quantity",
-                 "status", "availability", "sellable", "created_at", "base_cents", "promotion_percent",
+                 "availability", "sellable", "created_at", "base_cents", "promotion_percent",
                  "offer_cents", "pix_cents"},
     "promotions": {"promotion_id", "product_id", "discount_percent", "description", "is_active"},
 }
@@ -43,11 +45,12 @@ MAX_QUERY_SECONDS = 2.0
 
 SCHEMA_DESCRIPTION = """Public catalog tables (SQLite, read-only):
 - categories(category_id, name, description)
-- products(product_id, category_id, name, name_search, description, specs, stock_quantity, status,
+- products(product_id, category_id, name, name_search, description, specs, stock_quantity,
   availability, sellable, created_at, base_cents, promotion_percent, offer_cents, pix_cents)
   * name_search: lowercase name without accents, for LIKE.
   * specs: JSON, e.g. json_extract(specs, '$.strings') IN ('nylon','steel').
   * availability: available | out_of_stock | discontinued | coming_soon. sellable = 1 only if available.
+    There is no status column: to filter what is for sale, use availability = 'available'.
   * base_cents: list price; offer_cents: current price (with active promotion); pix_cents: PIX price.
 - promotions(promotion_id, product_id, discount_percent, description, is_active)
 Categories: 1 Guitarras (electric guitars), 2 Baixos (basses), 3 Baterias e Percussão (drums), 4 Teclados e Pianos
@@ -85,6 +88,18 @@ def _connect(db_path: Path) -> sqlite3.Connection:
     return con
 
 
+def available_by_category(db_path: Path) -> dict[str, int]:
+    """Sellable products per category, so an empty search is never read as "the store has none"."""
+    con = _connect(db_path)
+    try:
+        rows = con.execute("SELECT c.name, COUNT(p.product_id) FROM categories c LEFT JOIN products p "
+                           "ON p.category_id = c.category_id AND p.sellable = 1 "
+                           "GROUP BY c.category_id ORDER BY c.category_id").fetchall()
+    finally:
+        con.close()
+    return {name: n for name, n in rows}
+
+
 def run_select(db_path: Path, sql: str, params: list | None = None) -> list[int]:
     """Run the model's SELECT and return product_ids in order, without duplicates."""
     params = list(params or [])
@@ -120,7 +135,8 @@ def run_select(db_path: Path, sql: str, params: list | None = None) -> list[int]
         if "interrupted" in msg:
             raise CatalogQueryError("too_expensive", "query exceeded the execution budget; add filters") from None
         if "not authorized" in msg or "prohibited" in msg:
-            raise CatalogQueryError("forbidden", "query not allowed: only SELECT on the public tables") from None
+            raise CatalogQueryError("forbidden", "query not allowed: only SELECT on the public tables and the "
+                                    "columns in the schema (for what is for sale, use availability)") from None
         raise CatalogQueryError("invalid_sql", msg) from None
     except sqlite3.ProgrammingError as exc:
         raise CatalogQueryError("invalid_sql", str(exc)) from None
@@ -207,22 +223,33 @@ def budget_from_message(message: str) -> tuple[int, bool] | None:
     return round(value * 100), bool(re.search(r"\bpix\b", message, re.IGNORECASE))
 
 
+_STRINGS_RE = {"nylon": re.compile(r"\bnylon\b", re.IGNORECASE),
+               "steel": re.compile(r"\b(a[cç]o|steel)\b", re.IGNORECASE)}
+
+
+def strings_from_message(message: str) -> str | None:
+    """String type the customer asked for ("violão de nylon" -> "nylon"); None when absent or both are named."""
+    found = [kind for kind, rx in _STRINGS_RE.items() if rx.search(message)]
+    return found[0] if len(found) == 1 else None
+
+
 @dataclass
 class CatalogResult:
     products: list[dict]
     dropped_unavailable: int
     dropped_over_budget: int
+    dropped_other_strings: int = 0
 
     def to_dict(self) -> dict:
         return {"products": self.products, "dropped_unavailable": self.dropped_unavailable,
-                "dropped_over_budget": self.dropped_over_budget}
+                "dropped_over_budget": self.dropped_over_budget, "dropped_other_strings": self.dropped_other_strings}
 
 
 def query_catalog(db_path: Path, sql: str, params: list | None, intent: Intent,
                   user_message: str = "", limit: int | None = None) -> CatalogResult:
     ids = run_select(db_path, sql, params)
     products = hydrate(db_path, ids[:MAX_ROWS_READ])
-    dropped_unavailable = dropped_budget = 0
+    dropped_unavailable = dropped_budget = dropped_strings = 0
     if intent == "discover":
         # Discovery only offers what is for sale and within the cap the customer stated.
         sellable = [p for p in products if p["availability"] == "available"]
@@ -234,7 +261,14 @@ def query_catalog(db_path: Path, sql: str, params: list | None, intent: Intent,
             within = [p for p in products if (p["pix_cents"] if on_pix else p["offer_cents"]) <= cap]
             dropped_budget = len(products) - len(within)
             products = within
+        wanted = strings_from_message(user_message)
+        if wanted:
+            # Instruments with nylon/steel strings must match what the customer asked; others are untouched.
+            kept = [p for p in products if p["specs"].get("strings") not in ("nylon", "steel")
+                    or p["specs"]["strings"] == wanted]
+            dropped_strings = len(products) - len(kept)
+            products = kept
         products = products[: min(limit or DEFAULT_DISCOVER_CARDS, MAX_PRODUCTS)]
     else:
         products = products[:MAX_PRODUCTS]
-    return CatalogResult(products, dropped_unavailable, dropped_budget)
+    return CatalogResult(products, dropped_unavailable, dropped_budget, dropped_strings)

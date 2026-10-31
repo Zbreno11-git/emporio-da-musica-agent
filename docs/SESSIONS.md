@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 8 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5 benchmark). Next: S5.2 cost model, S5.3, S6, S6b, S7, S8.
+**Progress: 10 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3). Next: S6, S6b, S7, S8.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -135,7 +135,9 @@ If the work runs late, cut in this order (unchanged):
 
 ---
 
-### S5.2 · Cost model (≈1 h) [OFF + one web fetch] → C7b
+### ✅ S5.2 · Cost model (done 2026-10-31) [OFF + one web fetch] → C7b
+- [x] `scripts/cost_model.py` → `evals/cost-model.md`; recomputed on the S5.3 rerun: 0.00185 USD/turn, 2,000 conversations ≈ US$ 15.47/month — commit `4ff2d88` and the S5.3 commit
+
 **Does:** add `scripts/cost_model.py`.
 - **Inputs:**
   - `evals/benchmark/2026-10-31-{gemini-3.1-flash-lite,gemini-3.5-flash-lite}.jsonl`;
@@ -171,7 +173,9 @@ If the work runs late, cut in this order (unchanged):
 **🐞 Expected trouble:**
 - The Cloud Run page may show a different tier or table layout → record exactly what was read, with the date, and mark the number "estimate".
 
-### S5.3 · Out-of-scope fix (≈30 min) [GEM]
+### ✅ S5.3 · Out-of-scope fix, grown into the D22 guards (done 2026-10-31) [GEM]
+- [x] Product-reference, promise, false-absence (`status` removed, empty-result note), string-type and fetch-on-correction guards; rerun 0 blockers / 0 quality notes on both lite models ([report](../evals/model-benchmark.md)); 120 tests, 42/42 mutations
+
 **Does:**
 1. **Prompt (`app/prompts.py`):**
    - rule 1 gains "never name a product, model or brand the store sells unless it came from a tool result in this conversation";

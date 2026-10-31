@@ -16,6 +16,7 @@ Q, I, C = "app/tools/quote.py", "scripts/import_snapshot.py", "app/tools/catalog
 TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py", "tests/tools/test_catalog_sql.py"
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
+TPM = "tests/domain/test_product_mentions.py"
 O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
 B, CM, TCM = "scripts/benchmark_models.py", "scripts/cost_model.py", "tests/evals/test_cost_model.py"
 
@@ -80,6 +81,23 @@ MUTATIONS = [
     (A, '        if state.profile_required:\n            next_action = "choose_profile"',
      '        if False:\n            next_action = "choose_profile"', f"{TH}::test_order_as_visitor_asks_for_profile"),
     (S, "            if self.count >= self.limit:", "            if False:", f"{TH}::test_daily_cap_stops_model_calls"),
+    (A, "    problems += product_reference_problems(text, _evidence_text(state))\n", "",
+     f"{TH}::test_invented_product_is_never_shown"),
+    (A, "        if not _INSTALLMENTS_RE.match(code) and code.casefold() not in tokens:", "        if False:",
+     f"{TPM}::test_model_code_without_brand_is_flagged"),
+    (A, "    parts = [state.message, *state.known_products.values()]", "    parts = [state.message]",
+     f"{TH}::test_product_from_tool_result_or_customer_words_is_accepted"),
+    (A, "    parts = [state.message, *state.known_products.values()]",
+     "    parts = [*state.known_products.values()]", f"{TH}::test_product_from_tool_result_or_customer_words_is_accepted"),
+    (A, "    problems += [f\"promises an action no system performs: '{m.group(0)}'\" for m in _PROMISE_RE.finditer(text)]\n",
+     "", f"{TH}::test_promised_action_is_rejected"),
+    (C, "ON p.category_id = c.category_id AND p.sellable = 1 ", "ON p.category_id = c.category_id ",
+     f"{TH}::test_empty_search_tells_the_model_what_the_store_has"),
+    (A, "            if reply.calls and can_fetch:", "            if False:",
+     f"{TH}::test_unconfirmed_price_is_fetched_in_the_correction"),
+    (C, '                 "availability", "sellable", "created_at",', '                 "status", "availability", "sellable", "created_at",',
+     f"{TC}::test_status_column_is_not_public"),
+    (C, "        if wanted:\n", "        if False:\n", f"{TC}::test_discover_keeps_only_the_strings_the_customer_asked_for"),
     (B, '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
      f"{TCM}::test_cost_per_turn_bills_thinking_tokens_as_output"),
     (CM, "    return mean_usd_per_turn * turns * conversations", "    return mean_usd_per_turn * conversations",

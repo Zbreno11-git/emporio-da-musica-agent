@@ -114,3 +114,30 @@ def test_ukulele_attribute(catalog):
 )
 def test_budget_from_message(message, expected):
     assert budget_from_message(message) == expected
+
+
+def test_status_column_is_not_public(catalog):
+    """Real case (benchmark 2026-10-31): status = 'available' matched nothing and the agent said the store had none.
+    The column is raw store data ("active"); availability is canonical, so the trap now fails loudly."""
+    with pytest.raises(CatalogQueryError) as exc:
+        run_select(catalog, "SELECT product_id FROM products WHERE status = 'available'")
+    assert exc.value.code == "forbidden" and "availability" in exc.value.message
+
+
+def test_discover_keeps_only_the_strings_the_customer_asked_for(catalog):
+    """Real case (benchmark 2026-10-31): the SQL forgot the nylon filter, which would offer a steel-string Shelby."""
+    sql = "SELECT product_id FROM products WHERE category_id = 5 AND pix_cents <= 80000 ORDER BY offer_cents"
+    result = query_catalog(catalog, sql, [], "discover", "Tem violão de nylon até R$ 800?", limit=10)
+    assert result.products and all(p["specs"]["strings"] == "nylon" for p in result.products)
+    assert 89 not in [p["product_id"] for p in result.products] and result.dropped_other_strings > 0
+    steel = query_catalog(catalog, sql, [], "discover", "um violão de aço até R$ 800", limit=10)
+    assert steel.products and all(p["specs"]["strings"] == "steel" for p in steel.products)
+
+
+@pytest.mark.parametrize(("message", "expected"), [
+    ("Tem violão de nylon até R$ 800?", "nylon"), ("violão de aço", "steel"), ("cordas de aco", "steel"),
+    ("nylon ou aço, tanto faz", None), ("me indica um baixo", None)])
+def test_strings_from_message(message, expected):
+    from app.tools.catalog import strings_from_message
+
+    assert strings_from_message(message) == expected

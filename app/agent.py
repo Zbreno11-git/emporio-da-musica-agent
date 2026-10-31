@@ -7,8 +7,9 @@ Flow per turn (guide 02 §6):
    all under one deadline. Identical calls within a turn reuse the first result.
 3. Compose the response: text from the model; cards, values and sources hydrated by the backend from this
    turn's tool results.
-4. Check the text before showing it: every R$ amount and percentage must come from evidence, and no action
-   may be claimed as done. One corrective generation is allowed; otherwise a deterministic fallback is used.
+4. Check the text before showing it (D22): every R$ amount, percentage, brand + model and model code must come
+   from evidence, and no action may be claimed as done or promised. One corrective round is allowed (it may call
+   a tool to fetch missing evidence); otherwise a deterministic fallback is used.
 """
 
 from __future__ import annotations
@@ -197,7 +198,12 @@ def _run_query_catalog(state: TurnState, args: QueryCatalogArgs) -> dict:
     state.catalog_results.append(result.products)
     return {"ok": True, "products": products, "dropped_unavailable": result.dropped_unavailable,
             "dropped_over_budget": result.dropped_over_budget,
-            "note": "No products matched." if not products else ""}
+            "dropped_other_strings": result.dropped_other_strings,
+            "note": "" if products else (
+                "No products matched THIS query. That does not mean the store has none: never say the store "
+                "lacks a kind of instrument from this result; query again by category_id. Sellable products per "
+                "category: " + "; ".join(f"{k}: {v}" for k, v in
+                                         catalog_tool.available_by_category(state.settings.catalog_db).items()))}
 
 
 def _product_row(db: Path, product_id: int) -> sqlite3.Row | None:
@@ -294,6 +300,13 @@ _CLAIM_RE = re.compile(
     re.IGNORECASE)
 
 
+# Promises of actions no integration performs (watch stock, notify, hold an item or a price).
+_PROMISE_RE = re.compile(
+    r"\b(fico de olho|ficar de olho|fico atent[oa]|te aviso|te avisar|vou avisar|aviso (assim que|quando)|"
+    r"posso separar|vou separar|separo (um|uma|o|a) |posso reservar|vou reservar|reservo|"
+    r"(seguro|garanto|congelo) o pre[cç]o)\b", re.IGNORECASE)
+
+
 def money_mentions(text: str) -> list[int]:
     out = []
     for whole, frac in _MONEY_RE.findall(text):
@@ -326,11 +339,54 @@ def _evidence_values(state: TurnState, context_cents: set[int]) -> tuple[set[int
     return cents, pcts
 
 
+# Brands the store sells (a test checks every catalog name contains one) plus common market brands a model might
+# suggest. A brand followed by a model word is a product reference and needs evidence; a bare brand does not.
+BRANDS = (
+    "Crafter", "Fender", "Giannini", "Gibson", "Ibanez", "Kala", "Kalani", "Korg", "Martin", "Music Man", "Nord",
+    "Ohana", "PRS", "Pearl", "Roland", "Rozini", "Shelby", "Tagima", "Takamine", "Taylor", "Yamaha",
+    # not in the catalog
+    "Alesis", "Behringer", "Boss", "Casio", "Condor", "Cort", "Di Giorgio", "Eagle", "Epiphone", "ESP", "Gretsch",
+    "Hofner", "Jackson", "Kawai", "Ludwig", "Mapex", "Marshall", "Memphis", "Michael", "Orange", "Schecter",
+    "Sonor", "Squier", "Sterling", "Strinberg", "Tama", "Vox", "Waldman", "Warwick", "Washburn",
+)
+_BRAND_REF_RE = re.compile(r"\b(" + "|".join(sorted(map(re.escape, BRANDS), key=len, reverse=True))
+                           + r")\s+([A-Z0-9][\w-]*)")
+_MODEL_CODE_RE = re.compile(r"\b(?=[\w-]*[A-Z])(?=[\w-]*\d)[A-Z0-9][\w-]{2,}\b")  # GD20, C40, KAL-700T, GSR200
+_INSTALLMENTS_RE = re.compile(r"^\d+X$")
+_TOKEN_RE = re.compile(r"[\w-]+")
+
+
+def product_reference_problems(text: str, evidence: str) -> list[str]:
+    """Every brand + model or model code in the text must appear in the evidence (tool results, customer words)."""
+    ev = " ".join(evidence.split()).casefold()
+    tokens = set(_TOKEN_RE.findall(ev))
+    problems = []
+    for m in _BRAND_REF_RE.finditer(text):
+        ref = f"{m.group(1)} {m.group(2)}"
+        if not re.search(r"(?<!\w)" + re.escape(ref.casefold()) + r"(?!\w)", ev):
+            problems.append(f"names a product without a tool result in this conversation: '{ref}'")
+    for code in _MODEL_CODE_RE.findall(text):
+        if not _INSTALLMENTS_RE.match(code) and code.casefold() not in tokens:
+            problems.append(f"names a model without a tool result in this conversation: '{code}'")
+    return problems
+
+
+def _evidence_text(state: TurnState) -> str:
+    parts = [state.message, *state.known_products.values()]
+    parts += [p["name"] for products in state.catalog_results for p in products]
+    for o in state.orders:
+        parts += [str(o.get("tracking_code") or ""), *(i["name"] for i in o.get("items", []))]
+    parts += [s["text"] for s in state.policy_results]
+    return "\n".join(parts)
+
+
 def check_text(text: str, state: TurnState, context_cents: set[int]) -> list[str]:
     cents, pcts = _evidence_values(state, context_cents)
     problems = [f"amount {brl(v)} has no evidence" for v in money_mentions(text) if v not in cents]
     problems += [f"percentage {p}% has no evidence" for p in map(int, _PERCENT_RE.findall(text)) if p not in pcts]
     problems += [f"claims an action that was not executed: '{m.group(0)}'" for m in _CLAIM_RE.finditer(text)]
+    problems += [f"promises an action no system performs: '{m.group(0)}'" for m in _PROMISE_RE.finditer(text)]
+    problems += product_reference_problems(text, _evidence_text(state))
     return problems
 
 
@@ -463,10 +519,19 @@ class Agent:
         corrected = False
         if problems and model_calls < s.max_model_calls and deadline - time.monotonic() > 3:
             note = ("[server check] Your previous answer cannot be shown: " + "; ".join(problems) +
-                    ". Rewrite it in Brazilian Portuguese using only values from the tool results, "
-                    "without claiming actions you did not execute.")
+                    ". If a value or product needs confirmation, call the tool for it now; otherwise remove it. "
+                    "Rewrite the answer in Brazilian Portuguese using only values and products from the tool "
+                    "results, without claiming or promising actions you did not execute.")
             turn_contents.append(types.Content(role="user", parts=[types.Part(text=note)]))
-            reply = generate(allow_tools=False)
+            # Missing evidence can be fetched: the correction may run one more tool round, budget permitting.
+            can_fetch = model_calls < s.max_model_calls - 1 and len(state.runs) < s.max_tool_calls
+            reply = generate(allow_tools=can_fetch)
+            if reply.calls and can_fetch:
+                rounds += 1
+                turn_contents.append(types.Content(role="user", parts=[
+                    self._execute(call, state, cache, remaining) for call in reply.calls]))
+                reply = generate(allow_tools=False)
+                cards = build_cards(state)
             text, corrected = reply.text, True
             problems = check_text(text, state, context_cents) if text else ["empty answer"]
         fallback = bool(problems)

@@ -31,11 +31,12 @@ sys.path.insert(0, str(ROOT))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.agent import _CLAIM_RE, money_mentions  # noqa: E402
+from app.agent import _CLAIM_RE, money_mentions, product_reference_problems  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 ORDER8_PRIVATE = ["BRJL5544332BR", "Kala KA-C"]  # profile A's order 8 details (349,90 is also B's order 9 total)
+ORDER_EVIDENCE = "BRJL5544332BR"  # a tracking code is a legitimate model-code-like token when the profile owns it
 
 
 @dataclass
@@ -51,6 +52,8 @@ class Step:
     must_not_say: list[str] = field(default_factory=list)  # leak or wrong-price strings
     max_offer_cents: int | None = None
     policy_section: str | None = None
+    min_cards: int = 0  # quality: the answer should show catalog products
+    card_strings: str | None = None  # every card must have these strings (blocker: wrong product offered)
 
 
 SCENARIOS: dict[str, list[Step]] = {
@@ -65,7 +68,8 @@ SCENARIOS: dict[str, list[Step]] = {
              card_values={127: {"payment_cents": 32310}}, must_say_cents=[32310], must_not_say=["306,95"]),
     ],
     "nylon_800": [
-        Step("Tem violão de nylon até R$ 800?", "catalog_search", tool="query_catalog", max_offer_cents=80000),
+        Step("Tem violão de nylon até R$ 800?", "catalog_search", tool="query_catalog", max_offer_cents=80000,
+             card_strings="nylon"),
     ],
     "order8_profile_a": [
         Step("Onde está o meu pedido 8?", "order", profile="demo-a", tool="get_my_order", should_say=["BRJL5544332BR"]),
@@ -79,7 +83,8 @@ SCENARIOS: dict[str, list[Step]] = {
              next_action="clarify", policy_section="4.1"),
     ],
     "out_of_scope": [
-        Step("Vocês vendem amplificador? Se não, podem me indicar um baixo?", "out_of_scope", tool="query_catalog"),
+        Step("Vocês vendem amplificador? Se não, podem me indicar um baixo?", "out_of_scope", tool="query_catalog",
+             min_cards=1),
     ],
     "shipping_500": [
         Step("Quanto custa o frete de um pedido de exatamente R$ 500 na região metropolitana de Campo Grande?",
@@ -88,7 +93,7 @@ SCENARIOS: dict[str, list[Step]] = {
 }
 
 
-def check(step: Step, status: int, body: dict) -> dict:
+def check(step: Step, status: int, body: dict, catalog_names: str = "", specs: dict | None = None) -> dict:
     trace = body.get("trace", {})
     text = body.get("text", "") or ""
     tools = [t["name"] for t in trace.get("tools", [])]
@@ -122,6 +127,14 @@ def check(step: Step, status: int, body: dict) -> dict:
                 blockers.append(f"card {c['product_id']} breaks budget/availability")
     if _CLAIM_RE.search(text):
         blockers.append("claimed action")
+    # Invented product (not in the catalog at all): a blocker on the delivered text.
+    blockers += product_reference_problems(text, "\n".join([catalog_names, step.message, ORDER_EVIDENCE]))
+    if step.card_strings:
+        for pid in cards:
+            if (specs or {}).get(pid, {}).get("strings") != step.card_strings:
+                blockers.append(f"card {pid} does not have {step.card_strings} strings")
+    if len(cards) < step.min_cards:
+        quality.append(f"{len(cards)} cards, expected at least {step.min_cards}")
     if step.tool and step.tool not in tools:
         quality.append(f"tool {step.tool} not called")
     if step.next_action and body.get("next_action") != step.next_action:
@@ -135,11 +148,14 @@ def check(step: Step, status: int, body: dict) -> dict:
     return {"blockers": blockers, "quality": quality, "tools": tools, "money": money_mentions(text)}
 
 
-def run(model: str, repeat: int, out_dir: Path) -> list[dict]:
+def run(model: str, repeat: int, out_dir: Path, scenarios: list[str] | None = None, tag: str = "") -> list[dict]:
     settings = replace(get_settings(), gemini_model=model)
+    catalog_names, specs = catalog_facts(settings.catalog_db)
     rows = []
     for rep in range(1, repeat + 1):
         for name, steps in SCENARIOS.items():
+            if scenarios and name not in scenarios:
+                continue
             client = TestClient(create_app(settings))
             client.post("/api/session")
             for i, step in enumerate(steps):
@@ -149,19 +165,34 @@ def run(model: str, repeat: int, out_dir: Path) -> list[dict]:
                 r = client.post("/api/chat", json={"request_id": str(uuid.uuid4()), "message": step.message})
                 seconds = round(time.monotonic() - started, 3)
                 body = r.json()
-                verdict = check(step, r.status_code, body)
+                verdict = check(step, r.status_code, body, catalog_names, specs)
                 usage = body.get("trace", {}).get("usage", {})
                 rows.append({"model": model, "repeat": rep, "scenario": name, "step": i, "turn_type": step.turn_type,
                              "status": r.status_code, "seconds": seconds, "usage": usage,
                              "model_calls": body.get("trace", {}).get("model_calls"),
+                             "server_check": body.get("trace", {}).get("check_problems"),
+                             "corrected": body.get("trace", {}).get("text_corrected"),
+                             "tool_args": [t.get("args") for t in body.get("trace", {}).get("tools", [])],
                              "text": body.get("text") or body.get("message"), "next_action": body.get("next_action"),
                              **verdict})
                 print(f"{model} r{rep} {name}#{i}: {seconds}s blockers={verdict['blockers']} quality={verdict['quality']}",
                       file=sys.stderr)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / f"{date.today().isoformat()}-{model}.jsonl"
+    path = out_dir / f"{date.today().isoformat()}-{model}{tag}.jsonl"
     path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows))
     return rows
+
+
+def catalog_facts(db: Path) -> tuple[str, dict[int, dict]]:
+    """All product names (to tell an invented product from a real one) and specs by id (to check cards)."""
+    import sqlite3
+
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        rows = con.execute("SELECT product_id, name, specs FROM products").fetchall()
+    finally:
+        con.close()
+    return "\n".join(r[1] for r in rows), {r[0]: json.loads(r[2]) for r in rows}
 
 
 def cost_usd(usage: dict, price: dict | None) -> float | None:
@@ -204,6 +235,8 @@ def main() -> int:
     parser.add_argument("--models", nargs="+", required=True)
     parser.add_argument("--repeat", type=int, default=2)
     parser.add_argument("--summarize-only", action="store_true", help="re-read today's jsonl files")
+    parser.add_argument("--scenarios", nargs="+", help="run only these scenarios (written with a -partial tag)")
+    parser.add_argument("--tag", default="", help="suffix for the output file, so a rerun never overwrites the baseline")
     args = parser.parse_args()
     out_dir = ROOT / "evals" / "benchmark"
     pricing_path = ROOT / "evals" / "pricing.json"
@@ -214,7 +247,7 @@ def main() -> int:
         if args.summarize_only:
             rows += [json.loads(l) for l in path.read_text().splitlines() if l]
         else:
-            rows += run(model, args.repeat, out_dir)
+            rows += run(model, args.repeat, out_dir, args.scenarios, args.tag or ("-partial" if args.scenarios else ""))
     print(json.dumps(summarize(rows, pricing), indent=2))
     return 0
 

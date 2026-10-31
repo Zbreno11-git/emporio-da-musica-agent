@@ -6,9 +6,10 @@
 
 | # | Class | Occurrences | One-line antidote |
 | --- | --- | --- | --- |
-| 1 | A test passed for a reason other than the rule it claimed to protect | 3 | Run the mutation that removes the rule; the named test must fail |
+| 1 | A test passed for a reason other than the rule it claimed to protect | 4 | Run the mutation that removes the rule; the named test must fail |
 | 2 | Recommended a date without doing the calendar math | 1 | Before proposing a deadline, compute the weekday and the business-day rule from the source text |
 | 3 | Took a spec value as valid on the hosting platform without checking the platform's constraints | 1 | Before deploying a route or setting, check it against the target platform's documented limits; verify on the URL, not only locally |
+| 4 | Gave the model a tool surface where a plausible wrong use fails silently | 1 | Make the wrong use fail loudly (remove or rename the trap) and re-check the model's claims against server facts |
 
 ---
 
@@ -19,6 +20,8 @@
 **2026-10-31 — function allowlist.** Replacing the SQLite function allowlist with "allow all" left the violation test green. The only function case was `load_extension`, which Python already blocks on its own. Added `randomblob` and `sqlite_version`, which exist and are not on the list.
 
 **2026-10-31 — row cap.** `test_rows_read_are_capped_without_limit` asserted `<= 65` on a cross join, but deduplication already guarantees at most 65 IDs, so removing the cap could never fail it. Found during the second review pass; the test now lowers the cap to 5 and expects exactly 5 IDs.
+
+**2026-10-31 — benchmark nylon check.** The `nylon_800` scenario checked only availability and budget, so a steel-string card for a nylon request would have passed as "no blocker". Found by reading the tool arguments of a rerun, not by the battery. The scenario now checks every card's strings, and discovery re-applies the requested string type in code.
 
 > **A green test proves only what a mutation of the rule can make it fail.**
 
@@ -39,3 +42,12 @@
 > **A local green check does not prove the route exists on the platform.**
 
 **The antidote:** run every endpoint check against the hosted URL after each deploy (C6/C9), and read the platform's reserved-paths list before naming routes.
+
+### 4. Gave the model a tool surface where a plausible wrong use fails silently
+
+**2026-10-31 — `status` column.** The catalog schema exposed `status` (raw store values: `active`, `discontinued`, `coming_soon`) next to `availability` (`available`, ...). `gemini-3.1-flash-lite` wrote `status = 'available'` in several reruns, got an empty result and told the customer the store had no nylon guitars and no basses. Both are false. The query was valid SQL, so nothing failed. `status` is no longer public: the query now raises "use availability", and an empty discovery result carries the sellable count per category.
+
+> **A query that can be wrong and still succeed will be wrong in production, and the model will narrate the empty result as a fact.**
+
+**The antidote:** for every column or argument the model can use, ask "what is the plausible wrong use, and does it fail loudly?" Read the model's real tool arguments in reruns, not only its answers.
+

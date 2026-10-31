@@ -26,3 +26,26 @@ Blockers (D13) are checked on the delivered output. Prices come from [`pricing.j
 - `gemini-3.6-flash` was the only model with no quality notes, but it was about 5× the cost and about 3.6× the median latency, mostly from thinking tokens.
 - The out-of-scope miss (no bass suggested from the catalog) is a prompt issue to fix and re-check before the final capture.
 - 18 turns per model is a small sample: latency figures are indicative, and cost per turn depends on the conversation length.
+
+## Rerun after the S5.3 guards (2026-10-31, evening)
+
+**Why.** Breno asked (2026-10-31) to avoid invented products or numbers at any cost. Reading the baseline turns and three diagnostic reruns showed four failure modes, none of them caught by the first battery:
+
+| Failure mode (measured) | Guard added (server side, not prompt only) |
+| --- | --- |
+| Out of scope, baseline run 2: named "Ibanez GSR200" without any tool call. The catalog's only Ibanez bass is "Ibanez Bass 2X" | Every brand + model or model code in the text must appear in this conversation's tool results or the customer's words (`product_reference_problems`), otherwise correction, then fallback. Replayed over the 54 baseline answers: 1 hit (the GSR200), 0 false positives |
+| Nylon and bass searches filtered `status = 'available'` (status holds `active`), got nothing and told the customer the store had none | `status` removed from the public schema: that query now fails loudly with "use availability". An empty discovery result also returns the sellable count per category and "this does not mean the store has none" |
+| Nylon search without the nylon filter would offer a steel-string Shelby at R$ 549 | Discovery re-applies the string type the customer asked for, as it already did for the budget |
+| "E no PIX?" priced by the model itself (right number, no evidence), so the server fell back to a non-answer | The correction round may call one more tool, so missing evidence is fetched instead of replaced by the fallback |
+| "Posso ficar de olho e te aviso quando chegar" (a promise no system keeps) | Promises (watch stock, notify, hold an item or a price) are rejected like claimed actions |
+
+The battery itself got stricter: an invented product (not in the catalog) is a blocker, a nylon request with a non-nylon card is a blocker, and the out-of-scope scenario expects at least one card. Raw turns, with tool arguments, are in `benchmark/*-s53.jsonl`.
+
+| Model | Turns | Blocker turns | Quality notes | Median latency | Avg cost per turn (USD) |
+| --- | --- | --- | --- | --- | --- |
+| `gemini-3.1-flash-lite` | 18 | **0** | **0** | 1.90 s | **0.00185** |
+| `gemini-3.5-flash-lite` | 18 | **0** | **0** | 2.00 s | 0.00241 |
+
+**Result.** `gemini-3.1-flash-lite` stays pinned (D14). The cost per turn rose about 11% over the baseline (longer prompt, occasional correction rounds); the [cost model](cost-model.md) uses these delivered-version turns. Takamine still answers R$ 2.199,00 → R$ 2.089,05 on PIX in both runs.
+
+**Not covered by an automatic check.** Product characteristics in free text (for example "tampo em cedro sólido", which came from the catalog description in every case read) are only governed by the prompt; the S8 `/qa-response` review checks them against the tool results.
