@@ -2,7 +2,7 @@
 
 Reads the benchmark turns (evals/benchmark/2026-10-31-<model>-s53.jsonl) and the official prices recorded in
 evals/pricing.json (Gemini, Cloud Run and the USD→BRL rate, each with its source and date), and writes
-evals/cost-model.md. The token cost formula is imported from benchmark_models, so it has one source.
+evals/cost-model.md. The token cost formula is imported from app/metrics.py, the one the /admin page uses.
 
 Usage:
   .venv/bin/python scripts/cost_model.py            # writes evals/cost-model.md and prints the summary
@@ -18,9 +18,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(ROOT))
 
-from benchmark_models import cost_usd  # noqa: E402
+from app.metrics import turn_cost_usd as cost_usd  # noqa: E402
 
 BENCHMARK_DATE = "2026-10-31"
 BENCHMARK_SUFFIX = "-s53"  # the rerun after the S5.3 guards: the agent that is delivered, not the first baseline

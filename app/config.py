@@ -22,7 +22,7 @@ def load_dotenv(path: Path = ROOT / ".env") -> None:
 
 @dataclass(frozen=True)
 class Settings:
-    gemini_api_key: str = ""
+    gemini_api_key: str = field(default="", repr=False)
     gemini_model: str = ""
     data_dir: Path = ROOT / "data" / "build"
     timezone: str = "America/Campo_Grande"
@@ -37,6 +37,8 @@ class Settings:
     max_turns_per_day: int = 400  # whole process; protects the Gemini budget on the public demo
     thinking_level: str = ""
     expose_trace: bool = True
+    admin_token: str = field(default="", repr=False)  # empty: /admin/api/stats always answers 404
+    pricing_path: Path = ROOT / "evals" / "pricing.json"
     extra: dict = field(default_factory=dict)
 
     @property
@@ -64,4 +66,5 @@ def get_settings() -> Settings:
         max_turns_per_day=int(env.get("MAX_TURNS_PER_DAY", "400")),
         thinking_level=env.get("GEMINI_THINKING_LEVEL", ""),
         expose_trace=env.get("EXPOSE_TRACE", "1") == "1",
+        admin_token=env.get("ADMIN_TOKEN", ""),
     )

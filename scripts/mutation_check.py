@@ -17,6 +17,7 @@ TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
 TPM = "tests/domain/test_product_mentions.py"
+TA, MT = "tests/http/test_admin.py", "app/metrics.py"
 FJ, TJ = "app/static/format.js", "tests/js/test_node_units.py::test_format_rules"
 O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
 B, CM, TCM = "scripts/benchmark_models.py", "scripts/cost_model.py", "tests/evals/test_cost_model.py"
@@ -103,7 +104,18 @@ MUTATIONS = [
      '  if (card.payment_cents != null && card.payment_method) {', TJ),
     (FJ, "  if (card.discount_percent > 0) {", "  if (false) {", TJ),
     (FJ, "  if (!available) return view;", "  if (false) return view;", TJ),
-    (B, '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
+    (M, "        if not settings.admin_token or not hmac.compare_digest(token.encode(), settings.admin_token.encode()):",
+     "        if False:", f"{TA}::test_stats_need_the_token"),
+    (M, "        if not settings.admin_token or not hmac.compare_digest(token.encode(), settings.admin_token.encode()):",
+     "        if not hmac.compare_digest(token.encode(), settings.admin_token.encode()):",
+     f"{TA}::test_no_token_configured_means_always_404"),
+    (M, "            metrics.record(result.trace, result.cards, result.sources, result.handoff)\n",
+     "            metrics.record(result.trace, result.cards, result.sources, result.handoff)\n"
+     "            metrics.topics[body.message[:60]] += 1\n", f"{TA}::test_customer_text_is_never_kept"),
+    (MT, "                                 for pid, n in self.products.most_common(3)],",
+     "                                 for pid, n in self.products.most_common(4)],", f"{TA}::test_aggregates_match_hand_computation"),
+    (MT, "    if \"get_my_order\" in names:", "    if False:", "tests/domain/test_metrics.py::test_topic_for"),
+    ("app/metrics.py", '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
      f"{TCM}::test_cost_per_turn_bills_thinking_tokens_as_output"),
     (CM, "    return mean_usd_per_turn * turns * conversations", "    return mean_usd_per_turn * conversations",
      f"{TCM}::test_monthly_projection_is_mean_times_turns_times_conversations"),

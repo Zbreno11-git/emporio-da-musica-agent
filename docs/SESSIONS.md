@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 11 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3, S6). Next: S6b, S7, S8.
+**Progress: 12 of 14 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5, S5.2, S5.3, S6, S6b). Next: S7, S8.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -230,7 +230,9 @@ If the work runs late, cut in this order (unchanged):
 - A non-breaking space in the `Intl` output breaks string asserts → normalize ` ` in the tests only.
 - Fonts not loading → check the network panel and the `/static` MIME type.
 
-### S6b · `/admin` (≈1.5 h) [OFF + GEM] → C8b — D20
+### ✅ S6b · `/admin` (done 2026-10-31) [OFF + GEM] → C8b — D20
+- [x] `app/metrics.py` (the one cost formula, now also used by the benchmark and the cost model), `/admin` shell + `/admin/api/stats`, 13 tests, 5 mutations (50/50), secret `admin-token` v1; checked in the browser after 2 real turns
+
 **Does:**
 - **`app/metrics.py`:** a `TurnMetrics` collector, in memory and thread-safe, with `started_at`. It is fed in `main.py` after each successful turn, with `record(trace, cards, sources)`. It stores **only**:
   - the cost (usage × the price for `settings.gemini_model`);

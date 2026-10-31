@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Empório da Música · Painel</title>
+<link rel="icon" href="/static/symbol.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/admin.css">
+<script type="module" src="/static/admin.js"></script>
+</head>
+<body>
+<header class="brand-header">
+  <div class="brand">
+    <img src="/static/symbol.svg" alt="" width="32" height="32" class="brand-symbol">
+    <span class="brand-name">Empório da Música</span>
+  </div>
+  <span class="header-tag">Painel da loja</span>
+</header>
+
+<main class="chat admin">
+  <form id="unlock" class="unlock" autocomplete="off">
+    <label for="token">Token de acesso</label>
+    <div class="unlock-row">
+      <input id="token" type="password" required spellcheck="false">
+      <button type="submit" class="button">Ver números</button>
+    </div>
+    <p class="note">O token fica só nesta aba e some ao recarregar a página.</p>
+    <p id="unlock-error" class="error-text" role="alert"></p>
+  </form>
+
+  <section id="stats" hidden aria-live="polite">
+    <p id="since" class="note"></p>
+    <div class="kpis">
+      <div class="kpi"><span class="kpi-label">Respostas</span><span id="turns" class="kpi-value"></span></div>
+      <div class="kpi"><span class="kpi-label">Custo médio por resposta</span><span id="avg" class="kpi-value"></span></div>
+      <div class="kpi"><span class="kpi-label">Custo total no período</span><span id="total" class="kpi-value"></span></div>
+    </div>
+    <p id="cost-note" class="note"></p>
+
+    <h2>Assuntos mais frequentes</h2>
+    <p class="note">Derivados das consultas que o atendente fez (catálogo, preço, pedido, seção do manual). O texto das perguntas não é guardado.</p>
+    <table id="topics" class="table"><thead><tr><th scope="col">Assunto</th><th scope="col" class="num">Respostas</th></tr></thead><tbody></tbody></table>
+
+    <h2>Produtos mais procurados</h2>
+    <p class="note">Os 3 produtos que mais apareceram em cards de resposta.</p>
+    <ol id="products" class="products"></ol>
+
+    <button type="button" id="refresh" class="button button-secondary">Atualizar</button>
+  </section>
+</main>
+</body>
+</html>

@@ -7,7 +7,7 @@
 | # | Class | Occurrences | One-line antidote |
 | --- | --- | --- | --- |
 | 1 | A test passed for a reason other than the rule it claimed to protect | 4 | Run the mutation that removes the rule; the named test must fail |
-| 2 | Recommended a date without doing the calendar math | 1 | Before proposing a deadline, compute the weekday and the business-day rule from the source text |
+| 2 | Recommended a date or time without doing the calendar or clock math | 2 | Before writing a date or time, compute it from the source (weekday, business days, `TZ=... date`) |
 | 3 | Took a spec value as valid on the hosting platform without checking the platform's constraints | 1 | Before deploying a route or setting, check it against the target platform's documented limits; verify on the URL, not only locally |
 | 4 | Gave the model a tool surface where a plausible wrong use fails silently | 1 | Make the wrong use fail loudly (remove or rename the trap) and re-check the model's claims against server facts |
 
@@ -31,9 +31,11 @@
 
 **2026-10-31 — deadline.** In the first planning round I offered "02/11" as the recommended deadline without computing that 2026-10-31 is a Saturday or reading the business-day rule. When Breno shared the selection e-mail, the rule ("today + two business days") gave Tue 2026-11-03 (or Wed 2026-11-04 if Nov 2 is not counted). The earlier plan was one day tighter than necessary.
 
+**2026-10-31 — session times.** After the compact I wrote "S5.2 closed ~17:30 SP", "S5.3 ~19:00 SP" and "S6 ~20:15 SP" in `PROGRESS.md` by reading the clock shown in screenshots, which headless Chromium renders in UTC. The real times were 16:39, 16:57 and 17:09 São Paulo. The /admin page, which formats with an explicit time zone, showed the right time and exposed the error. The same UTC-versus-local slip happened once before the compact.
+
 > **A deadline is a calculation from a source text, not an option to pick.**
 
-**The antidote:** quote the source sentence and run `date` or `python -c` for the weekday before proposing any deadline.
+**The antidote:** quote the source sentence and run `date` or `python -c` for the weekday before proposing any deadline; for a time, run `TZ=America/Sao_Paulo date` (or read the commit time) and never copy a time from a screenshot. Browser captures set `timezone_id` explicitly.
 
 ### 3. Took a spec value as valid on the hosting platform without checking the platform's constraints
 

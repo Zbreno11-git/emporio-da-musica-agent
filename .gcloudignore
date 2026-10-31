@@ -11,3 +11,6 @@ app/**/__pycache__/
 !data/build/orders-demo.db
 !data/build/policy_sections.json
 !data/build/manifest.json
+!evals/
+evals/*
+!evals/pricing.json

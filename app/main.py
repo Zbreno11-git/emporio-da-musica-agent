@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hmac
 import json
 import time
 from datetime import datetime
@@ -17,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from app.agent import Agent, DeadlineExceeded, GeminiLLM, LLM, ProviderUnavailable
 from app.config import Settings, get_settings
 from app.contracts import ChatRequest, ChatResponse, ProfileRequest
+from app.metrics import TurnMetrics
 from app.session import CachedRequest, DailyTurnCap, SessionStore
 from app.tools import orders as orders_tool
 
@@ -37,6 +39,8 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     store = SessionStore(settings.session_ttl_s, settings.max_sessions)
     daily_cap = DailyTurnCap(settings.max_turns_per_day)
     state = {"agent": Agent(settings, llm) if llm else None}
+    metrics = TurnMetrics(*_model_price(settings))
+    app.state.metrics = metrics  # read by tests; never holds customer text (app/metrics.py)
 
     def agent() -> Agent:
         if state["agent"] is None:
@@ -175,13 +179,37 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
                 trace=result.trace if settings.expose_trace else None,
             ).model_dump(mode="json", exclude_none=True)
             entry.status, entry.response = "done", response
+            metrics.record(result.trace, result.cards, result.sources, result.handoff)
             return response
         finally:
             session.lock.release()
 
+    # /admin (D20): the page is an empty shell (a browser navigation cannot send a header, and a token in the URL
+    # would land in request logs); the numbers need X-Admin-Token. A wrong or missing token, or no token configured,
+    # gets the same 404 body as a route that does not exist.
+    @app.get("/admin")
+    def admin_page():
+        return FileResponse(STATIC / "admin.html", headers={"X-Robots-Tag": "noindex", "Cache-Control": "no-store"})
+
+    @app.get("/admin/api/stats")
+    def admin_stats(request: Request):
+        token = request.headers.get("x-admin-token", "")
+        if not settings.admin_token or not hmac.compare_digest(token.encode(), settings.admin_token.encode()):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        return JSONResponse(metrics.snapshot(), headers={"Cache-Control": "no-store"})
+
     if STATIC.exists():
         app.mount("/static", StaticFiles(directory=STATIC), name="static")
     return app
+
+
+def _model_price(settings: Settings) -> tuple[str, dict | None, str | None]:
+    """The served model's price from the one price file; a missing file or model means "cost unavailable", not 0."""
+    try:
+        pricing = json.loads(settings.pricing_path.read_text())
+    except (OSError, ValueError):
+        return settings.gemini_model, None, None
+    return settings.gemini_model, pricing.get("models", {}).get(settings.gemini_model), pricing.get("checked_on")
 
 
 WEEKDAYS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]

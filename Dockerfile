@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY data/build ./data/build
+COPY evals/pricing.json ./evals/pricing.json
 
 RUN useradd --system --no-create-home appuser
 USER appuser

@@ -1,0 +1,24 @@
+/* /admin page: reuses the chat tokens from app.css. */
+.header-tag { font-size: .9375rem; opacity: .9; }
+.admin h2 { margin: var(--space-6) 0 var(--space-1); font-size: 1.125rem; }
+.unlock { display: flex; flex-direction: column; gap: var(--space-2); max-width: 28rem; padding-top: var(--space-6); }
+.unlock label { font-weight: 600; }
+.unlock-row { display: flex; gap: var(--space-2); }
+.unlock input {
+  flex: 1; min-width: 0; min-height: var(--control-min); padding: 0 var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
+}
+.unlock[hidden] { display: none; }
+.note { margin: 0 0 var(--space-2); color: var(--muted); font-size: .9375rem; }
+.error-text { margin: 0; color: var(--error); font-weight: 600; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+.kpi { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.kpi-label { color: var(--muted); font-size: .9375rem; }
+.kpi-value { font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+.table th, .table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); text-align: left; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.products { margin: 0 0 var(--space-4); padding-left: 1.5rem; }
+.products li { padding: var(--space-1) 0; }
+#refresh { margin-top: var(--space-2); }

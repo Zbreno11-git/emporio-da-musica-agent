@@ -33,6 +33,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app.agent import _CLAIM_RE, money_mentions, product_reference_problems  # noqa: E402
 from app.config import get_settings  # noqa: E402
+from app.metrics import turn_cost_usd as cost_usd  # noqa: E402  (one cost formula: app/metrics.py)
 from app.main import create_app  # noqa: E402
 
 ORDER8_PRIVATE = ["BRJL5544332BR", "Kala KA-C"]  # profile A's order 8 details (349,90 is also B's order 9 total)
@@ -193,14 +194,6 @@ def catalog_facts(db: Path) -> tuple[str, dict[int, dict]]:
     finally:
         con.close()
     return "\n".join(r[1] for r in rows), {r[0]: json.loads(r[2]) for r in rows}
-
-
-def cost_usd(usage: dict, price: dict | None) -> float | None:
-    """Thinking tokens are billed as output tokens on Gemini; prices are USD per 1M tokens."""
-    if not price:
-        return None
-    out = usage.get("output", 0) + usage.get("thoughts", 0)
-    return (usage.get("input", 0) * price["input_per_mtok"] + out * price["output_per_mtok"]) / 1_000_000
 
 
 def summarize(rows: list[dict], pricing: dict) -> dict:
