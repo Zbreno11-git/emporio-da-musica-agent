@@ -52,3 +52,14 @@ def policy_index(snapshot_build):
     if not path.exists():
         pytest.skip("store manual missing: policy index not built")
     return PolicyIndex.load(path)
+
+
+@pytest.fixture
+def settings(snapshot_build):
+    """App settings on the real snapshot with the scripted fake model (tests/fakes.py)."""
+    from dataclasses import replace
+
+    from app.config import Settings
+
+    return replace(Settings(), data_dir=snapshot_build, gemini_model="fake-scripted")
+

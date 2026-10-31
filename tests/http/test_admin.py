@@ -9,7 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from tests.http.test_chat_api import TAKAMINE_SQL, FakeLLM, call, chat, say, settings  # noqa: F401 (fixture)
+from tests.fakes import FakeLLM, call, say
+from tests.http.test_chat_api import TAKAMINE_SQL, chat
 
 TOKEN = "test-admin-token-not-a-secret"
 SENTINEL = "SENTINELA-7Q"

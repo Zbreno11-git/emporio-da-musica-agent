@@ -15,50 +15,13 @@ from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
-from google.genai import types
 
-from app.agent import DeadlineExceeded, ModelReply, ProviderUnavailable
-from app.config import Settings
+from app.agent import DeadlineExceeded, ProviderUnavailable
 from app.contracts import ChatResponse
 from app.main import create_app
+from tests.fakes import FakeLLM, call, say
 
 TAKAMINE_SQL = "SELECT product_id FROM products WHERE name_search LIKE ?"
-
-
-def call(name: str, **args) -> ModelReply:
-    part = types.Part(function_call=types.FunctionCall(id=str(uuid.uuid4()), name=name, args=args))
-    return ModelReply(content=types.Content(role="model", parts=[part]), calls=[part.function_call], text="",
-                      usage={"input": 1, "output": 1})
-
-
-def say(text: str) -> ModelReply:
-    return ModelReply(content=types.Content(role="model", parts=[types.Part(text=text)]), calls=[], text=text,
-                      usage={"input": 1, "output": 1})
-
-
-class FakeLLM:
-    """Scripted stand-in for Gemini. Each generate() pops the next reply or raises the scripted error."""
-
-    model = "fake-scripted"
-
-    def __init__(self, script: list):
-        self.script = list(script)
-        self.seen: list[list[types.Content]] = []
-        self.gate: threading.Event | None = None
-
-    def generate(self, *, system, contents, tools, timeout_s, allow_tools):
-        self.seen.append(list(contents))
-        if self.gate is not None:
-            self.gate.wait(5)
-        item = self.script.pop(0)
-        if isinstance(item, Exception):
-            raise item
-        return item
-
-
-@pytest.fixture
-def settings(snapshot_build) -> Settings:
-    return replace(Settings(), data_dir=snapshot_build, gemini_model="fake-scripted")
 
 
 def client_for(settings, script) -> tuple[TestClient, FakeLLM]:

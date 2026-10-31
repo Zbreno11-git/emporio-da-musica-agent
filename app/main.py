@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import time
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +25,72 @@ from app.tools import orders as orders_tool
 
 COOKIE = "emporio_sid"
 STATIC = Path(__file__).resolve().parent / "static"
+MAX_BODY_BYTES = 16 * 1024  # a chat message is at most 2,000 characters; anything far larger is refused unread
+log = logging.getLogger("emporio")
+
+# The page has no inline script or style (app/static), so the policy needs no 'unsafe-inline'.
+SECURITY_HEADERS = {
+    "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+                               "font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; "
+                               "form-action 'self'; object-src 'none'",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "no-referrer",
+    "x-frame-options": "DENY",
+    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+}
+
+
+class Hardening:
+    """ASGI layer: refuses bodies over MAX_BODY_BYTES (declared or streamed) and adds the security headers."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        path = scope.get("path", "")
+        declared = dict(scope.get("headers") or []).get(b"content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > MAX_BODY_BYTES):
+            return await self._too_large(scope, receive, send)
+        if declared is None and scope.get("method") in ("POST", "PUT", "PATCH", "DELETE"):
+            # Streamed body without a declared length: read it here, up to the limit, then replay it once.
+            body, more = b"", True
+            while more:
+                message = await receive()
+                if message["type"] == "http.disconnect":
+                    return
+                body += message.get("body", b"")
+                more = message.get("more_body", False)
+                if len(body) > MAX_BODY_BYTES:
+                    return await self._too_large(scope, receive, send)
+            replayed = False
+
+            async def replay():
+                nonlocal replayed
+                if replayed:
+                    return await receive()
+                replayed = True
+                return {"type": "http.request", "body": body, "more_body": False}
+
+            receive = replay
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                headers = [(k, v) for k, v in message.get("headers", []) if k.decode().lower() not in SECURITY_HEADERS]
+                headers += [(k.encode(), v.encode()) for k, v in SECURITY_HEADERS.items()]
+                if path.startswith(("/api/", "/admin/api/")):
+                    headers = [(k, v) for k, v in headers if k.lower() != b"cache-control"]
+                    headers.append((b"cache-control", b"no-store"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
+
+    async def _too_large(self, scope, receive, send):
+        response = error(413, "payload_too_large", "A mensagem é grande demais.", False)
+        response.headers.update(SECURITY_HEADERS)
+        await response(scope, receive, send)
 
 
 def error(status: int, code: str, message: str, retryable: bool, request_id: str | None = None) -> JSONResponse:
@@ -35,7 +102,7 @@ def error(status: int, code: str, message: str, retryable: bool, request_id: str
 
 def create_app(settings: Settings | None = None, llm: LLM | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="Empório da Música agent", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Empório da Música agent", docs_url=None, redoc_url=None, openapi_url=None)
     store = SessionStore(settings.session_ttl_s, settings.max_sessions)
     daily_cap = DailyTurnCap(settings.max_turns_per_day)
     state = {"agent": Agent(settings, llm) if llm else None}
@@ -47,6 +114,11 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
             state["agent"] = Agent(settings, GeminiLLM(settings.gemini_api_key, settings.gemini_model,
                                                        settings.thinking_level))
         return state["agent"]
+
+    @app.exception_handler(Exception)
+    async def unexpected(request: Request, exc: Exception):
+        log.exception("unhandled error on %s", request.url.path)  # details stay in the server log
+        return error(500, "internal_error", "Algo saiu errado do nosso lado. Quer tentar de novo?", True)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_input(request: Request, exc: RequestValidationError):
@@ -165,6 +237,10 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
             except DeadlineExceeded:
                 session.requests.pop(rid, None)
                 return error(504, "deadline_exceeded", "A consulta demorou demais. Quer tentar de novo?", True, rid)
+            except Exception:
+                session.requests.pop(rid, None)  # a retry with the same id must run again, not wait forever
+                log.exception("unexpected error in a chat turn")
+                return error(500, "internal_error", "Algo saiu errado do nosso lado. Quer tentar de novo?", True, rid)
             if session.generation != generation:
                 session.requests.pop(rid, None)
                 return error(409, "session_changed", "O perfil mudou durante a resposta. Envie de novo.", True, rid)
@@ -200,6 +276,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
 
     if STATIC.exists():
         app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    app.add_middleware(Hardening)
     return app
 
 

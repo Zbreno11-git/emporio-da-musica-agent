@@ -18,6 +18,8 @@ A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
 TPM = "tests/domain/test_product_mentions.py"
 TA, MT = "tests/http/test_admin.py", "app/metrics.py"
+THD = "tests/http/test_hardening.py"
+AJ, TE = "app/static/app.js", "tests/e2e/test_flows.py"
 FJ, TJ = "app/static/format.js", "tests/js/test_node_units.py::test_format_rules"
 O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
 B, CM, TCM = "scripts/benchmark_models.py", "scripts/cost_model.py", "tests/evals/test_cost_model.py"
@@ -115,6 +117,21 @@ MUTATIONS = [
     (MT, "                                 for pid, n in self.products.most_common(3)],",
      "                                 for pid, n in self.products.most_common(4)],", f"{TA}::test_aggregates_match_hand_computation"),
     (MT, "    if \"get_my_order\" in names:", "    if False:", "tests/domain/test_metrics.py::test_topic_for"),
+    (M, "                headers += [(k.encode(), v.encode()) for k, v in SECURITY_HEADERS.items()]",
+     "                headers += []", f"{THD}::test_security_headers"),
+    (M, "        if declared is not None and (not declared.isdigit() or int(declared) > MAX_BODY_BYTES):",
+     "        if False:", f"{THD}::test_body_over_the_limit_is_413_with_or_without_length"),
+    (M, "                if len(body) > MAX_BODY_BYTES:", "                if False:",
+     f"{THD}::test_body_over_the_limit_is_413_with_or_without_length"),
+    (M, "                session.requests.pop(rid, None)  # a retry with the same id must run again, not wait forever",
+     "                pass", f"{THD}::test_unexpected_error_is_generic_and_releases_the_request_id"),
+    (M, "redoc_url=None, openapi_url=None)", "redoc_url=None)", f"{THD}::test_docs_and_schema_are_not_published"),
+    (AJ, "    addError(res.body, () => send(message, rid, false));", "    addError(res.body, () => send(message, requestId(), true));",
+     f"{TE}::test_provider_failure_offers_a_retry_without_duplicating_the_message"),
+    (AJ, "  if (!input.value) input.value = message; // keep the draft when retrying cannot help", "",
+     f"{TE}::test_daily_limit_keeps_the_draft_and_offers_no_useless_retry"),
+    (AJ, '  if (body.next_action === "choose_profile") {', "  if (true) {",
+     f"{TE}::test_takamine_then_pix_cards_match_the_api"),
     ("app/metrics.py", '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
      f"{TCM}::test_cost_per_turn_bills_thinking_tokens_as_output"),
     (CM, "    return mean_usd_per_turn * turns * conversations", "    return mean_usd_per_turn * conversations",
