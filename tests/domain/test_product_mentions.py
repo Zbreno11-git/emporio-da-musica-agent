@@ -54,3 +54,27 @@ def test_catalog_brands_are_all_in_the_lexicon(snapshot_build):
     con.close()
     missing = [n for n in names if not any(f" {b} " in f" {n} " for b in BRANDS)]
     assert missing == []
+
+
+# --- sound and build qualities (D22): they must come from the product data of this conversation -------------------
+
+from app.agent import quality_problems  # noqa: E402
+
+C40 = "Violão clássico com tampo em Spruce e fundo/laterais em Meranti. Ideal para estudantes e iniciantes, com excelente projeção sonora."
+TAKAMINE = "Violão dreadnought Takamine com tampo sólido em cedro. Excelente para fingerstyle com timbre quente e definido."
+
+
+def test_quality_not_in_the_description_is_flagged():
+    """Real case (capture 2026-10-31): the C40 was said to have "um timbre bem definido"; its description has no timbre."""
+    problems = quality_problems("Ele tem um timbre bem definido e é muito resistente.", C40)
+    assert any("timbre" in p for p in problems) and any("resistent" in p for p in problems)
+
+
+def test_quality_backed_by_the_description_passes_with_accents_folded():
+    assert quality_problems("Tem uma ótima projeção sonora.", C40) == []
+    assert quality_problems("O timbre é quente, ótimo para fingerstyle.", TAKAMINE) == []
+    assert quality_problems("Projecao boa.", C40) == []
+
+
+def test_ordinary_words_are_not_quality_claims():
+    assert quality_problems("Quer que eu prepare um resumo? O prazo é de sete dias corridos.", C40) == []

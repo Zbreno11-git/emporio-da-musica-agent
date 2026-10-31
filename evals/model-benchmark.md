@@ -51,3 +51,14 @@ The battery itself got stricter: an invented product (not in the catalog) is a b
 **Not covered by an automatic check.** Product characteristics in free text (for example "tampo em cedro sólido", which came from the catalog description in every case read) are only governed by the prompt; the S8 `/qa-response` review checks them against the tool results.
 
 **Check before the S7 deploy (2026-10-31).** One more run on `gemini-3.1-flash-lite` after adding "product characteristics only from the tool's description and specs" to the prompt: 9/9 turns, 0 blockers, 0 quality notes, US$ 0.00188 per turn, median 1.78 s ([`benchmark/*-s7.jsonl`](benchmark/)).
+
+## Rerun with the quality guard (2026-10-31, S8)
+
+**Why.** The review of the first real captures found sound qualities the catalog does not state ("timbre bem definido" for a guitar whose description only mentions "projeção sonora"; "timbre encorpado" for the Kalani). Replaying the 126 real answers measured so far, about 8% carried such a claim. The server now checks sound and build qualities (timbre, sonoridade, encorpado, projeção, graves, agudos, brilhante, quente, resistente, durável, robusto, confortável) against the description and specs of the products in the conversation (D22). An unsupported quality gets one correction, then the fallback.
+
+| Model | Turns | Blocker turns | Quality notes | Median latency | Avg cost per turn (USD) |
+| --- | --- | --- | --- | --- | --- |
+| `gemini-3.1-flash-lite` | 18 | **0** | 2 (server corrections, both ending in the description's own words) | 1.84 s | **0.00203** |
+| `gemini-3.5-flash-lite` | 18 | **0** | 1 (server correction) | 1.68 s | 0.00255 |
+
+The corrections cost about 10% more per turn than the S5.3 rerun. The [cost model](cost-model.md) uses these turns (`benchmark/*-s8.jsonl`), the agent as delivered.

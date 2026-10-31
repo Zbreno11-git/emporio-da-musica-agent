@@ -75,7 +75,7 @@ Then S8.2: run `/qa-response` on each conversation, and carry the two observatio
 - ChatGPT was used for brainstorming and specs — Breno — `docs/ai-usage.md`.
 
 **Do not forget (lives only here or is easy to miss):**
-- **Costs for the PDF:** US$ 0.00185 per answer on the delivered version (`evals/cost-model.md`); the first baseline was 0.00167. For 2,000 conversations × 4 turns: about US$ 14.81 Gemini + US$ 0.66 Cloud Run gross, about R$ 83,85 at PTAX 5.4212 (2026-10-30).
+- **Costs for the PDF:** US$ 0.00203 per answer on the delivered version with every D22 guard (`evals/cost-model.md`, `-s8` runs); earlier runs: 0.00167 (baseline), 0.00185 (S5.3). For 2,000 conversations × 4 turns: about US$ 16.24 Gemini + US$ 0.65 Cloud Run gross = US$ 16.89 ≈ R$ 91,58 at PTAX 5.4212 (2026-10-30).
 - **Model shutdown and prices:** both go in the PDF and in the README limitations.
   - `gemini-3.1-flash-lite` shuts down on 2027-05-07. Its replacement, `gemini-3.5-flash-lite`, had 0 blockers at US$ 0.00241 per turn.
   - `gemini-3.6-flash` prices double on 2027-01-01.

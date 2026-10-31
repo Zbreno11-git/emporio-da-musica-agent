@@ -127,6 +127,24 @@ def test_unconfirmed_price_is_fetched_in_the_correction(settings):
     assert body["cards"][0]["payment_cents"] == 208905 and "R$ 2.089,05" in body["text"]
 
 
+def test_unsupported_sound_quality_is_never_shown(settings):
+    client, _ = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE product_id = 81", params=[], intent="lookup"),
+        say("O Yamaha C40 está por R$ 599,90 e tem um timbre encorpado."),  # not in the C40 description
+        say("O Yamaha C40 tem timbre encorpado mesmo."),
+    ])
+    body = chat(client, "Quanto custa o Yamaha C40?").json()
+    assert "encorpado" not in body["text"] and body["trace"]["text_fallback"] is True
+    assert "R$ 599,90" in body["text"]  # the fallback is built from the card
+
+    client, _ = client_for(settings, [
+        call("query_catalog", sql="SELECT product_id FROM products WHERE product_id = 81", params=[], intent="lookup"),
+        say("O Yamaha C40 está por R$ 599,90, com tampo em Spruce e ótima projeção sonora."),
+    ])
+    body = chat(client, "Quanto custa o Yamaha C40?").json()
+    assert body["trace"]["text_corrected"] is False
+
+
 def test_empty_search_tells_the_model_what_the_store_has(settings):
     client, llm = client_for(settings, [
         call("query_catalog", sql="SELECT product_id FROM products WHERE name_search LIKE '%contrabaixo%'",

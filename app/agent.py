@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 import sqlite3
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Literal, Protocol
@@ -371,6 +372,33 @@ def product_reference_problems(text: str, evidence: str) -> list[str]:
     return problems
 
 
+# Sound and build qualities a customer relies on when choosing. Each one in the text must appear in the description or
+# specs of a product from this conversation (accent-insensitive stems). Real case: "timbre bem definido" for a guitar
+# whose description only mentions "projeção sonora" (capture of 2026-10-31).
+QUALITY_STEMS = ("timbre", "sonoridade", "encorpad", "projec", "sustain", "graves", "agudos", "brilhant", "aveludad",
+                 "quente", "resistent", "duravel", "durabilidade", "robust", "confortavel", "conforto")
+_WORD_RE = re.compile(r"[a-z]+")
+
+
+def _fold(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", text.lower()) if not unicodedata.combining(c))
+
+
+def quality_problems(text: str, product_facts: str) -> list[str]:
+    facts = _fold(product_facts)
+    claimed = {stem for word in _WORD_RE.findall(_fold(text)) for stem in QUALITY_STEMS if word.startswith(stem)}
+    return [f"describes a quality that is not in the product data: '{stem}'" for stem in sorted(claimed)
+            if stem not in facts]
+
+
+def _product_facts(state: TurnState) -> str:
+    """Descriptions and specs of every product seen in this conversation, read from the catalog."""
+    if not state.known_products:
+        return ""
+    rows = catalog_tool.hydrate(state.settings.catalog_db, list(state.known_products))
+    return "\n".join(f"{p['description']} {' '.join(map(str, p['specs'].values()))}" for p in rows)
+
+
 def _evidence_text(state: TurnState) -> str:
     parts = [state.message, *state.known_products.values()]
     parts += [p["name"] for products in state.catalog_results for p in products]
@@ -387,6 +415,7 @@ def check_text(text: str, state: TurnState, context_cents: set[int]) -> list[str
     problems += [f"claims an action that was not executed: '{m.group(0)}'" for m in _CLAIM_RE.finditer(text)]
     problems += [f"promises an action no system performs: '{m.group(0)}'" for m in _PROMISE_RE.finditer(text)]
     problems += product_reference_problems(text, _evidence_text(state))
+    problems += quality_problems(text, _product_facts(state))
     return problems
 
 
@@ -520,8 +549,8 @@ class Agent:
         if problems and model_calls < s.max_model_calls and deadline - time.monotonic() > 3:
             note = ("[server check] Your previous answer cannot be shown: " + "; ".join(problems) +
                     ". If a value or product needs confirmation, call the tool for it now; otherwise remove it. "
-                    "Rewrite the answer in Brazilian Portuguese using only values and products from the tool "
-                    "results, without claiming or promising actions you did not execute.")
+                    "Rewrite the answer in Brazilian Portuguese using only values, products and characteristics "
+                    "from the tool results, without claiming or promising actions you did not execute.")
             turn_contents.append(types.Content(role="user", parts=[types.Part(text=note)]))
             # Missing evidence can be fetched: the correction may run one more tool round, budget permitting.
             can_fetch = model_calls < s.max_model_calls - 1 and len(state.runs) < s.max_tool_calls
