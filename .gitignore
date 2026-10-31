@@ -1,0 +1,53 @@
+# Insumos privados: ZIPs, PDFs, CSVs brutos, guias internos e planejamento
+_insumos_privados/
+*.zip
+*.pdf
+*.csv
+
+# Bancos derivados (gerados localmente a partir dos CSVs)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Ambiente e segredos
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*credentials*.json
+service-account*.json
+gha-creds-*.json
+*.pem
+*.key
+
+# Caches e builds Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Logs e artefatos de teste locais
+logs/
+*.log
+test-results/
+playwright-report/
+screenshots/
+
+# Claude Code: configuração local e skills de terceiros (reinstaláveis, ver docs/referencias-e-skills.md)
+.claude/settings.local.json
+.claude/skills/
+
+# Sistema e editor
+.DS_Store
+.idea/
+.vscode/

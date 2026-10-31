@@ -1,0 +1,16 @@
+# Decisões
+
+> O que foi decidido, por quê, quem decidiu e o gatilho escrito que reabre cada decisão. Uma decisão só é reaberta quando o gatilho dispara. Decisões de produto, prazo ou dinheiro são de Breno.
+
+| # | Decisão | Por quê | Quem, quando | Alternativa recusada | Gatilho para reabrir |
+| --- | --- | --- | --- | --- | --- |
+| D1 | Python 3.12 + FastAPI + HTML/CSS/JS, uma aplicação servindo UI e API | Python é obrigatório no enunciado. Uma única origem simplifica a sessão e o deploy | Breno, antes de 31/10/2026 | Streamlit/Gradio: menos controle da tela e da sessão | Um requisito que a UI estática não atenda |
+| D2 | Gemini com function calling via SDK `google-genai`. O ID do modelo é fixado por benchmark de custo-benefício | Breno escolheu o Gemini. A conta lista vários modelos Flash, mas **não** existe um `gemini-3.1-flash` (medido em 31/10/2026) | Breno (provedor); modelo a decidir por medição | — | Resultado do benchmark, ou um modelo indisponível ou com erro de tool calling |
+| D3 | SQLite: `catalog.db` público e somente leitura; `orders-demo.db` em outra conexão | O agente pode consultar o catálogo livremente sem alcançar dados pessoais | Breno, guia 02 | Um banco único com permissões lógicas: um ATTACH ou um erro bastaria para vazar dados | — |
+| D4 | Preço, promoção, PIX e parcelas são calculados por funções determinísticas, em centavos | Preço errado reprova o caso. O LLM recebe os valores já confirmados | Breno, guia 02 | O LLM calcular: risco de aplicar o desconto duas vezes (§6.2) | — |
+| D5 | Políticas com recuperação por seção. Quando a regra resolve, aplicar. Quando falta um fato do cliente, perguntar. Em lacuna ou conflito decisivo, encaminhar com `delivery_status=prepared` | O manual tem lacunas e conflitos reais (ver achados) | Breno | Contexto inteiro do manual a cada turno: custo e citação imprecisa | A busca lexical abaixo da meta na avaliação rotulada → testar a semântica |
+| D6 | Visitante entra sem cadastro. O perfil fictício só é pedido para pedidos. A identidade vem da sessão do servidor. A memória dura a sessão | Lição do exemplo bancário do Pydantic AI: a identidade não vem do chat | Breno | Login real: fora do escopo do protótipo | — |
+| D7 | Marca Ressonância (Fraunces 600, Source Sans 3; `#173D33`, `#FAF6EC`, `#984B2C`, `#242825`). Layout da opção 1, com um avatar por turno, miniatura única e slogan só na abertura | Decisão de marca concluída no guia 01 | Breno | Vitrine lateral (descartada) | Falha de legibilidade medida no celular |
+| D8 | Demo no Cloud Run, projeto GCP dedicado `emporio-da-musica-agent` (criado em 31/10/2026), região `southamerica-east1` | Breno pediu explicitamente um projeto separado, sem usar `altivaserra` | Breno, 31/10/2026 | Reaproveitar o projeto `altivaserra`: recusado por Breno | — |
+| D9 | Skills de terceiros instaladas em `.claude/skills/` e fora do Git | A licença da `qa-response` é ambígua (README diz Apache-2.0 e MIT, sem arquivo LICENSE). O repositório fica focado no produto | Agente, 31/10/2026 (recomendação; Breno pode derrubar) | Versionar as cópias | Breno pedir inclusão, ou a Composio publicar uma licença inequívoca |
+| D10 | O primer `CLAUDE.md` fica na raiz e os documentos de continuidade ficam em `docs/` | Raiz pública enxuta | Agente, 31/10/2026 | `PROGRESSO.md` na raiz, como sugere a skill `software-build` | — |
