@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 5 of 11 sessions closed** (S0, S0b, S1, S-EN, S2). S3–S8 are next.
+**Progress: 6 of 11 sessions closed** (S0, S0b, S1, S-EN, S2, S3). S4–S8 are next.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -86,7 +86,8 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
   - **✅ C3:** 219900 then 208905, same `product_id=95`, via `quote_product(method=pix)`; log model, SDK version, duration and tokens.
 - **Offline tests:** HTTP with a labeled fake Gemini (contract, 409, 410, 503).
 
-### S3 · Orders and policies (≈2 h) [OFF + GEM]
+### ✅ S3 · Orders and policies (done 2026-10-31, ahead of schedule) [OFF + GEM]
+- [x] Orders bound to the session with profile rotation; manual index (28 sections) and BM25 with related sections (12/12 base); prepared hand-off with the §7 channel; 95 tests, 29/29 mutations; real scenarios checked and two prompt fixes applied
 - **3.1 Orders.**
   - **Does:** `app/tools/orders.py` with `WHERE order_id=? AND customer_id=?`; profiles demo-a→2, demo-b→6, demo-c→7; a profile switch clears history and cache.
   - **✅ C4:** A/8 `shipped`; B/9 `confirmed`; B/8 == B/999; visitor → `profile_required`.

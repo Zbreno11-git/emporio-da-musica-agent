@@ -16,6 +16,7 @@ Q, I, C = "app/tools/quote.py", "scripts/import_snapshot.py", "app/tools/catalog
 TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py", "tests/tools/test_catalog_sql.py"
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
+O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
 
 MUTATIONS = [
     # (file, original snippet, defect, test that must fail)
@@ -65,6 +66,18 @@ MUTATIONS = [
     (M, "            except ProviderUnavailable:\n                session.requests.pop(rid, None)",
      "            except ProviderUnavailable:\n                pass", f"{TH}::test_provider_failures_are_public_errors_and_release_the_request_id"),
     (S, "        if len(self.recent_turns) >= per_minute:", "        if False:", f"{TH}::test_rate_limit_is_429"),
+    (O, '        row = con.execute("SELECT * FROM orders WHERE order_id = ? AND customer_id = ?",\n                          (order_id, customer_id)).fetchone()',
+     '        row = con.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,)).fetchone()',
+     f"{TO}::test_cross_profile_equals_non_existent"),
+    (M, "        session.reset_context()\n", "", f"{TH}::test_profile_a_sees_order_8_and_profile_b_does_not"),
+    (M, "            if session.generation != generation:", "            if False:",
+     f"{TH}::test_profile_switch_discards_turn_in_flight"),
+    (A, '        cents |= set(money_mentions(s["text"]))', "        pass",
+     f"{TH}::test_exact_500_shipping_prepares_handoff"),
+    (P, '            for rid in self.by_id[sid]["related_ids"]:', "            for rid in []:",
+     f"{TP}::test_related_sections_are_added"),
+    (A, '        if state.profile_required:\n            next_action = "choose_profile"',
+     '        if False:\n            next_action = "choose_profile"', f"{TH}::test_order_as_visitor_asks_for_profile"),
 ]
 
 

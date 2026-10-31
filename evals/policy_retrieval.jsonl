@@ -1,0 +1,22 @@
+{"id": "b01", "split": "base", "question": "Qual o horário de funcionamento da loja?", "expected_any": ["2"]}
+{"id": "b02", "split": "base", "question": "Qual o endereço da loja?", "expected_any": ["1.2"]}
+{"id": "b03", "split": "base", "question": "Quais formas de pagamento vocês aceitam?", "expected_any": ["3"]}
+{"id": "b04", "split": "base", "question": "Posso parcelar em 10 vezes no cartão?", "expected_any": ["3.1"]}
+{"id": "b05", "split": "base", "question": "Comprei online e me arrependi, posso devolver?", "expected_any": ["4.1"]}
+{"id": "b06", "split": "base", "question": "Meu violão veio com defeito, o que eu faço?", "expected_any": ["4.2"]}
+{"id": "b07", "split": "base", "question": "Posso trocar o instrumento por outra cor?", "expected_any": ["4.3"]}
+{"id": "b08", "split": "base", "question": "Quanto custa o frete em Campo Grande?", "expected_any": ["5.1"]}
+{"id": "b09", "split": "base", "question": "Vocês entregam em outras cidades? Qual o prazo?", "expected_any": ["5.2"]}
+{"id": "b10", "split": "base", "question": "Como faço para rastrear meu pedido?", "expected_any": ["5.3"]}
+{"id": "b11", "split": "base", "question": "O desconto do PIX vale para produto em promoção?", "expected_any": ["6.2"]}
+{"id": "b12", "split": "base", "question": "Qual a garantia dos instrumentos?", "expected_any": ["8.1", "8.2"]}
+{"id": "p01", "split": "paraphrase", "question": "Vocês abrem no domingo?", "expected_any": ["2"]}
+{"id": "p02", "split": "paraphrase", "question": "Dá pra pagar no boleto?", "expected_any": ["3"]}
+{"id": "p03", "split": "paraphrase", "question": "Recebi o produto ontem e não gostei, consigo mandar de volta?", "expected_any": ["4.1"]}
+{"id": "p04", "split": "paraphrase", "question": "Vocês vendem cordas e amplificador?", "expected_any": ["1", "7.1"]}
+{"id": "p05", "split": "paraphrase", "question": "Tem algum número pra falar com vocês?", "expected_any": ["7", "1.2"]}
+{"id": "p06", "split": "paraphrase", "question": "O que a garantia não cobre?", "expected_any": ["8.3"]}
+{"id": "m01", "split": "mixed", "question": "Quanto fica no PIX um produto que já está em promoção, e posso parcelar?", "expected_all": ["6.2", "3", "3.1"]}
+{"id": "m02", "split": "mixed", "question": "Meu instrumento quebrou depois de 40 dias da compra, ainda tem troca ou garantia?", "expected_all": ["4.2", "8.1"]}
+{"id": "m03", "split": "mixed", "question": "Quero devolver uma compra online e também saber o prazo de entrega para Dourados.", "expected_all": ["4.1", "5.2"]}
+{"id": "m04", "split": "mixed", "question": "Qual o frete de um pedido de exatamente R$ 500 em Campo Grande e qual o WhatsApp de vocês?", "expected_all": ["5.1", "7"]}

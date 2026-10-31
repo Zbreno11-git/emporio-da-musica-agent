@@ -98,6 +98,14 @@ class SessionStore:
             session.last_seen = now
             return session
 
+    def rotate(self, session: Session) -> str:
+        """Give the session a new id (after an identity change) and invalidate the old one."""
+        with self._lock:
+            self._sessions.pop(session.id, None)
+            session.id = secrets.token_urlsafe(32)
+            self._sessions[session.id] = session
+            return session.id
+
     def delete(self, sid: str | None) -> None:
         with self._lock:
             self._sessions.pop(sid or "", None)

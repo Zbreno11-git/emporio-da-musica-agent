@@ -26,7 +26,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app import prompts
 from app.config import Settings
 from app.tools import catalog as catalog_tool
+from app.tools import orders as orders_tool
 from app.tools import quote as quote_tool
+from app.tools.policies import PolicyIndex
 
 
 # --- errors ------------------------------------------------------------------------------------------
@@ -126,6 +128,21 @@ class QuoteProductArgs(_Args):
     installments: int = Field(default=1, ge=1, le=12, description="Only for credit; 1 otherwise.")
 
 
+class GetMyOrderArgs(_Args):
+    order_id: int = Field(gt=0, description="The order number the customer mentioned.")
+
+
+class SearchPolicyArgs(_Args):
+    question: str = Field(min_length=2, max_length=500,
+                          description="Short question in Portuguese about a store rule; rephrase to search again.")
+
+
+class PrepareHandoffArgs(_Args):
+    reason: Literal["policy_gap", "policy_conflict", "complaint", "requires_staff"]
+    summary: str = Field(min_length=10, max_length=300,
+                         description="One line in Portuguese for the store team: the case and the open point.")
+
+
 @dataclass
 class ToolSpec:
     name: str
@@ -155,9 +172,14 @@ class TurnState:
     message: str
     known_products: dict[int, str]  # session memory: product_id -> name (from earlier tool results)
     customer_id: int | None = None
+    policy_index: PolicyIndex | None = None
     runs: list[ToolRun] = field(default_factory=list)
     catalog_results: list[list[dict]] = field(default_factory=list)
     quotes: list[dict] = field(default_factory=list)
+    orders: list[dict] = field(default_factory=list)
+    policy_results: list[dict] = field(default_factory=list)
+    profile_required: bool = False
+    handoff: dict | None = None
 
 
 def _run_query_catalog(state: TurnState, args: QueryCatalogArgs) -> dict:
@@ -202,6 +224,33 @@ def _run_quote_product(state: TurnState, args: QuoteProductArgs) -> dict:
     return result
 
 
+def _run_get_my_order(state: TurnState, args: GetMyOrderArgs) -> dict:
+    result = orders_tool.get_order(state.settings.orders_db, state.customer_id, args.order_id)
+    if result.get("error") == "profile_required":
+        state.profile_required = True
+    elif result.get("found"):
+        state.orders.append(result)
+    return result
+
+
+def _run_search_policy(state: TurnState, args: SearchPolicyArgs) -> dict:
+    sections = state.policy_index.search(args.question)
+    for s in sections:
+        if s["section_id"] not in {p["section_id"] for p in state.policy_results}:
+            state.policy_results.append(s)
+    return {"ok": True, "manual_version": state.policy_index.manual_version, "sections": sections,
+            "note": "No section matched; try other words." if not sections else ""}
+
+
+def _run_prepare_handoff(state: TurnState, args: PrepareHandoffArgs) -> dict:
+    state.handoff = {"reason": args.reason, "summary": args.summary,
+                     "channel_label": "WhatsApp de atendimento (manual da loja, seção 7)",
+                     "destination": state.policy_index.whatsapp_channel(), "delivery_status": "prepared"}
+    return {"ok": True, "delivery_status": "prepared", "destination": state.handoff["destination"],
+            "note": "Nothing was sent. The interface shows the summary for the customer to take to the store's "
+                    "WhatsApp. Do not say the team was notified."}
+
+
 TOOLS: dict[str, ToolSpec] = {
     "query_catalog": ToolSpec(
         "query_catalog",
@@ -215,6 +264,22 @@ TOOLS: dict[str, ToolSpec] = {
         "an installment count. Applies the store rules for promotions, PIX and installments and returns the "
         "decision (allowed, rejected, needs_confirmation, unavailable) with the manual sections used.",
         QuoteProductArgs, _run_quote_product),
+    "get_my_order": ToolSpec(
+        "get_my_order",
+        "Status, items, recorded total, payment method and tracking of an order of the customer's selected demo "
+        "profile. The profile comes from the session; only the order number is passed.",
+        GetMyOrderArgs, _run_get_my_order),
+    "search_policy": ToolSpec(
+        "search_policy",
+        "Search the store manual (v2.1) by section: hours, contacts, payment and installments, returns, "
+        "exchanges, warranty, shipping, tracking, promotions, service rules, privacy. Returns up to 3 sections "
+        "plus linked ones, with section id, title, pages and text.",
+        SearchPolicyArgs, _run_search_policy),
+    "prepare_handoff": ToolSpec(
+        "prepare_handoff",
+        "Prepare a one-line summary for the store team when the manual is silent or contradictory on the "
+        "decisive point, for complaints, or when only staff can decide. It sends nothing.",
+        PrepareHandoffArgs, _run_prepare_handoff),
 }
 
 
@@ -251,6 +316,11 @@ def _evidence_values(state: TurnState, context_cents: set[int]) -> tuple[set[int
         cents |= {v for v in (q["base_cents"], q["offer_cents"], q["payment_cents"]) if v}
         cents |= set(q["installment_cents"])
         pcts.add(q["discount_percent"])
+    for o in state.orders:
+        cents.add(o["total_cents"])
+    for s in state.policy_results:
+        cents |= set(money_mentions(s["text"]))
+        pcts |= {int(x) for x in _PERCENT_RE.findall(s["text"])}
     cents |= set(money_mentions(state.message))
     pcts |= {int(x) for x in _PERCENT_RE.findall(state.message)}
     return cents, pcts
@@ -331,10 +401,13 @@ class TurnResult:
 
 
 class Agent:
-    def __init__(self, settings: Settings, llm: LLM, tools: dict[str, ToolSpec] | None = None):
+    def __init__(self, settings: Settings, llm: LLM, tools: dict[str, ToolSpec] | None = None,
+                 policy_index: PolicyIndex | None = None):
         self.settings = settings
         self.llm = llm
         self.tools = tools or TOOLS
+        self.policy_index = policy_index or PolicyIndex.load(settings.policy_index)
+        self.policy_index.whatsapp_channel()  # fail at startup, not in a customer turn
         self._tool_decl = [types.Tool(function_declarations=[t.declaration() for t in self.tools.values()])]
 
     def run_turn(self, *, message: str, history: list[types.Content], known_products: dict[int, str],
@@ -343,7 +416,8 @@ class Agent:
         s = self.settings
         started = time.monotonic()
         deadline = started + s.chat_timeout_s
-        state = TurnState(settings=s, message=message, known_products=dict(known_products), customer_id=customer_id)
+        state = TurnState(settings=s, message=message, known_products=dict(known_products), customer_id=customer_id,
+                          policy_index=self.policy_index)
         user = types.Content(role="user", parts=[types.Part(text=message)])
         turn_contents: list[types.Content] = [user]
         system = prompts.system_instruction(context_lines or [])
@@ -403,12 +477,24 @@ class Agent:
             final = reply.content
 
         sources = [{"type": "catalog", "id": f"product:{c['product_id']}", "label": "Catálogo da loja"} for c in cards]
-        for q in state.quotes:
-            for rule in q["rule_ids"]:
-                src = {"type": "policy", "id": rule, "label": f"Manual da loja, seção {rule}"}
-                if src not in sources:
-                    sources.append(src)
-        next_action = "clarify" if not cards and not state.runs and text.rstrip().endswith("?") else "none"
+        sources += [{"type": "order", "id": f"order:{o['order_id']}", "label": f"Pedido {o['order_id']}"}
+                    for o in state.orders]
+        cited = [q_rule for q in state.quotes for q_rule in q["rule_ids"]]
+        cited += [p["section_id"] for p in state.policy_results if not p["related"]][:3]
+        for rule in cited:
+            section = self.policy_index.by_id.get(rule, {})
+            src = {"type": "policy", "id": rule, "label": f"Manual da loja, seção {rule}",
+                   "page_start": section.get("page_start"), "page_end": section.get("page_end")}
+            if src not in sources:
+                sources.append(src)
+        if state.profile_required:
+            next_action = "choose_profile"
+        elif state.handoff:
+            next_action = "contact_store"
+        elif not cards and text.rstrip().endswith("?"):
+            next_action = "clarify"
+        else:
+            next_action = "none"
         trace = {
             "model": self.llm.model,
             "duration_ms": int((time.monotonic() - started) * 1000),
@@ -420,7 +506,7 @@ class Agent:
             "text_fallback": fallback,
             "check_problems": problems,
         }
-        return TurnResult(text=text, cards=cards, sources=sources, next_action=next_action, handoff=None,
+        return TurnResult(text=text, cards=cards, sources=sources, next_action=next_action, handoff=state.handoff,
                           contents=kept + [final], trace=trace, known_products=state.known_products)
 
     def _execute(self, call: types.FunctionCall, state: TurnState, cache: dict[str, dict],

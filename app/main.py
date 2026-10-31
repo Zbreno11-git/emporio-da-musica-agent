@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
@@ -14,8 +16,9 @@ from fastapi.staticfiles import StaticFiles
 
 from app.agent import Agent, DeadlineExceeded, GeminiLLM, LLM, ProviderUnavailable
 from app.config import Settings, get_settings
-from app.contracts import ChatRequest, ChatResponse
+from app.contracts import ChatRequest, ChatResponse, ProfileRequest
 from app.session import CachedRequest, SessionStore
+from app.tools import orders as orders_tool
 
 COOKIE = "emporio_sid"
 STATIC = Path(__file__).resolve().parent / "static"
@@ -63,7 +66,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     def healthz():
         try:
             manifest = json.loads((settings.data_dir / "manifest.json").read_text())
-            ready = settings.catalog_db.exists() and settings.orders_db.exists()
+            ready = all(p.exists() for p in (settings.catalog_db, settings.orders_db, settings.policy_index))
         except (OSError, ValueError):
             ready, manifest = False, {}
         if not ready:
@@ -86,6 +89,31 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
         store.delete(request.cookies.get(COOKIE))
         response = Response(status_code=204)
         response.delete_cookie(COOKIE)
+        return response
+
+    @app.get("/api/demo-profiles")
+    def demo_profiles(request: Request):
+        if store.get(request.cookies.get(COOKIE)) is None:
+            return error(410, "session_expired", "A conversa expirou. Vamos começar uma nova?", True)
+        return {"profiles": orders_tool.list_profiles(settings.orders_db)}
+
+    @app.post("/api/session/profile")
+    def choose_profile(body: ProfileRequest, request: Request):
+        if not same_origin(request):
+            return error(403, "forbidden_origin", "Origem não permitida.", False)
+        session = store.get(request.cookies.get(COOKIE))
+        if session is None:
+            return error(410, "session_expired", "A conversa expirou. Vamos começar uma nova?", True)
+        customer_id = orders_tool.resolve_profile(settings.orders_db, body.profile)
+        if customer_id is None:
+            return error(422, "invalid_profile", "Perfil de demonstração desconhecido.", False)
+        # New identity, new context: history, cached answers and in-flight turns of the old profile are dropped.
+        session.reset_context()
+        session.profile_alias, session.customer_id = body.profile, customer_id
+        new_id = store.rotate(session)
+        label = next(p["label"] for p in orders_tool.list_profiles(settings.orders_db) if p["alias"] == body.profile)
+        response = JSONResponse({"profile": body.profile, "label": label})
+        set_cookie(request, response, new_id)
         return response
 
     @app.post("/api/chat")
@@ -119,7 +147,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
                     known_products=session.known_products,
                     context_cents=session.shown_cents,
                     customer_id=session.customer_id,
-                    context_lines=_context_lines(session),
+                    context_lines=_context_lines(session, settings.timezone),
                 )
             except ProviderUnavailable:
                 session.requests.pop(rid, None)
@@ -151,8 +179,13 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     return app
 
 
-def _context_lines(session) -> list[str]:
-    lines = []
+WEEKDAYS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]
+
+
+def _context_lines(session, timezone: str) -> list[str]:
+    now = datetime.now(ZoneInfo(timezone))
+    lines = [f"Now in Campo Grande: {now:%Y-%m-%d %H:%M} ({WEEKDAYS[now.weekday()]}). "
+             "Holidays are not in the system; confirm special dates with the store."]
     if session.known_products:
         recent = list(session.known_products.items())[-5:]
         lines.append("Products already seen in this conversation (product_id: name): "

@@ -12,11 +12,12 @@ The agent answers questions about the catalog, prices, payment methods, orders a
 
 | Done | Next |
 | --- | --- |
-| Snapshot importer (CSV → SQLite) with validation and a manifest | Orders bound to the server session |
-| Price, PIX and installment rules in integer cents, tested against reference values | Policy retrieval by manual section, hand-off to the staff |
-| Read-only catalog SQL executor with a deny-by-default authorizer | Cloud Run deploy, model benchmark |
-| Gemini function-calling loop with per-turn budget and server-side checks of prices and claimed actions | Ressonância web UI, real captured conversations |
+| Snapshot importer (CSV → SQLite) with validation and a manifest | Cloud Run deploy |
+| Price, PIX and installment rules in integer cents, tested against reference values | Model cost-benefit benchmark |
+| Read-only catalog SQL executor with a deny-by-default authorizer | Ressonância web UI |
+| Gemini function-calling loop with per-turn budget and server-side checks of prices and claimed actions | Browser tests, real captured conversations |
 | FastAPI session, dedup, rate limit and public errors | |
+| Orders bound to the session's demo profile; section-level manual retrieval ([evaluation](evals/policy-retrieval.md)); prepared hand-offs | |
 
 The roadmap is in [`docs/SESSIONS.md`](docs/SESSIONS.md) and the current state in [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
@@ -42,8 +43,9 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 cp .env.example .env            # set GEMINI_API_KEY locally; never commit .env
 
-# Build the demo databases from the challenge ZIP (or a directory containing the 6 CSVs)
+# Build the demo databases and the manual index from the challenge ZIP (or the extracted directory)
 .venv/bin/python scripts/import_snapshot.py --source "path/to/Desafio_Técnico_AI_Engineer_2026-....zip"
+.venv/bin/python scripts/build_policy_index.py --source "path/to/Desafio_Técnico_AI_Engineer_2026-....zip"
 
 # Tests (no API key needed). Snapshot-based tests read EMPORIO_SNAPSHOT=<ZIP> or skip with a reason.
 EMPORIO_SNAPSHOT="path/to/the/zip" .venv/bin/python -m pytest
@@ -68,6 +70,10 @@ app/prompts.py            store persona (instructions in English, replies in Bra
 app/session.py            in-memory sessions, dedup, rate limit
 app/tools/quote.py        price, promotion, PIX and installments (cents)
 app/tools/catalog.py      restricted SQL executor + product hydration
+app/tools/orders.py       order lookup bound to the session's demo profile
+app/tools/policies.py     BM25 retrieval over manual sections + related-section expansion
+scripts/build_policy_index.py  manual PDF -> section index (pages, tables, related ids)
+scripts/eval_retrieval.py labeled retrieval evaluation
 app/contracts.py          HTTP request/response models
 scripts/smoke_gemini.py   milestone-1 check against the real API
 evals/                    smoke and benchmark evidence

@@ -38,4 +38,17 @@ def snapshot_build(tmp_path_factory) -> Path:
         pytest.skip("Artefact snapshot missing: set EMPORIO_SNAPSHOT=<challenge ZIP>")
     out = tmp_path_factory.mktemp("snapshot") / "build"
     build(source, out)
+    from scripts.build_policy_index import main as build_index
+
+    build_index(["--source", str(source), "--out", str(out / "policy_sections.json")])
     return out
+
+
+@pytest.fixture(scope="session")
+def policy_index(snapshot_build):
+    from app.tools.policies import PolicyIndex
+
+    path = snapshot_build / "policy_sections.json"
+    if not path.exists():
+        pytest.skip("store manual missing: policy index not built")
+    return PolicyIndex.load(path)

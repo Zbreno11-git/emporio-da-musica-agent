@@ -207,3 +207,91 @@ def test_contract_examples_validate():
 
     for turn in json.loads((Path(__file__).parent.parent / "fixtures" / "turns.json").read_text()):
         ChatResponse.model_validate(turn["response"])
+
+
+# --- orders, profiles and hand-off ---------------------------------------------------------------------
+
+def test_order_as_visitor_asks_for_profile(settings):
+    client, _ = client_for(settings, [call("get_my_order", order_id=8),
+                                      say("Escolhe um perfil de demonstração para eu consultar o pedido.")])
+    body = chat(client, "Onde está o meu pedido 8?").json()
+    assert body["next_action"] == "choose_profile"
+    assert body["cards"] == [] and not any(s["type"] == "order" for s in body["sources"])
+
+
+def test_profile_a_sees_order_8_and_profile_b_does_not(settings):
+    client, llm = client_for(settings, [
+        call("get_my_order", order_id=8), say("Teu pedido 8 foi enviado, total de R$ 349,90."),
+        call("get_my_order", order_id=8), say("Não encontrei pedido com esse número para este perfil."),
+    ])
+    profiles = client.get("/api/demo-profiles").json()["profiles"]
+    assert [p["alias"] for p in profiles] == ["demo-a", "demo-b", "demo-c"]
+    old_cookie = client.cookies.get("emporio_sid")
+    assert client.post("/api/session/profile", json={"profile": "demo-a"}).status_code == 200
+    assert client.cookies.get("emporio_sid") != old_cookie  # identity change rotates the session id
+
+    a = chat(client, "Onde está o meu pedido 8?").json()
+    assert {"type": "order", "id": "order:8", "label": "Pedido 8"} in a["sources"]
+    assert "349,90" in a["text"]  # recorded order total is valid evidence
+
+    client.post("/api/session/profile", json={"profile": "demo-b"})
+    b = chat(client, "Onde está o meu pedido 8?").json()
+    assert not any(s["type"] == "order" for s in b["sources"])
+    # The model never saw profile A's turn after the switch: history was cleared.
+    assert "order_id" not in json.dumps([c.model_dump(mode="json") for c in llm.seen[-2][:-1]])
+    function_responses = [p.function_response.response for c in llm.seen[-1] for p in (c.parts or [])
+                          if p.function_response]
+    assert function_responses == [{"ok": True, "found": False,
+                                   "message": "No order with this number is available for the selected profile."}]
+
+
+def test_unknown_profile_is_rejected(settings):
+    client, _ = client_for(settings, [])
+    r = client.post("/api/session/profile", json={"profile": "admin"})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_profile"
+
+
+def test_profile_switch_discards_turn_in_flight(settings):
+    client, llm = client_for(settings, [say("Resposta do perfil antigo.")])
+    client.post("/api/session/profile", json={"profile": "demo-a"})
+    llm.gate = threading.Event()
+    results = {}
+    t = threading.Thread(target=lambda: results.setdefault("r", chat(client, "meu pedido 8")))
+    t.start()
+    deadline = time.monotonic() + 5
+    while not llm.seen and time.monotonic() < deadline:
+        time.sleep(0.01)
+    switched = client.post("/api/session/profile", json={"profile": "demo-b"})
+    llm.gate.set()
+    t.join()
+    assert switched.status_code == 200
+    assert results["r"].status_code == 409 and results["r"].json()["code"] == "session_changed"
+    assert client.get("/api/demo-profiles").status_code == 200  # profile B's session is intact
+
+
+def test_exact_500_shipping_prepares_handoff(settings):
+    client, _ = client_for(settings, [
+        call("search_policy", question="frete região metropolitana de Campo Grande"),
+        call("prepare_handoff", reason="policy_gap",
+             summary="Confirmar tarifa metropolitana para pedido de exatamente R$ 500."),
+        say("O manual fala em R$ 35,00 abaixo de R$ 500,00 e frete grátis acima. Para exatamente R$ 500 a "
+            "equipe precisa confirmar; deixei um resumo pronto para mandares no WhatsApp da loja."),
+    ])
+    body = chat(client, "Quanto custa o frete de um pedido de exatamente R$ 500 em Campo Grande?").json()
+    assert body["next_action"] == "contact_store"
+    assert body["handoff"] == {"reason": "policy_gap",
+                               "summary": "Confirmar tarifa metropolitana para pedido de exatamente R$ 500.",
+                               "channel_label": "WhatsApp de atendimento (manual da loja, seção 7)",
+                               "destination": "(67) 3321-4500", "delivery_status": "prepared"}
+    assert any(s["type"] == "policy" and s["id"] == "5.1" and s["page_start"] == 4 for s in body["sources"])
+    assert body["trace"]["text_fallback"] is False  # R$ 35 and R$ 500 are evidence from §5.1
+
+
+def test_policy_amount_not_in_manual_is_rejected(settings):
+    client, _ = client_for(settings, [
+        call("search_policy", question="frete região metropolitana de Campo Grande"),
+        say("O frete fica R$ 20,00."),
+        say("O frete fica R$ 20,00."),
+    ])
+    body = chat(client, "Quanto é o frete em Campo Grande?").json()
+    assert "20,00" not in body["text"] and body["trace"]["text_fallback"] is True
