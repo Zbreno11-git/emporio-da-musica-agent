@@ -1,12 +1,12 @@
-"""Consulta ao catálogo com SQL escrito pelo modelo, dentro de limites impostos pelo backend.
+"""Catalog lookup with model-written SQL, inside limits enforced by the backend.
 
-O modelo escreve um SELECT; o executor:
-- abre só `catalog.db`, em modo somente leitura e com `query_only`;
-- instala um authorizer que nega por padrão: só SELECT, leitura das colunas públicas e uma lista curta
-  de funções. ATTACH, PRAGMA, escrita, metadados, extensões e CTE recursiva são recusados na preparação;
-- limita passos da VM e tempo (progress handler) e linhas lidas, mesmo sem LIMIT no SQL;
-- exige a coluna `product_id` e hidrata os produtos a partir da tabela canônica: nome, preço e
-  disponibilidade que vão para a tela nunca vêm do SQL do modelo.
+The model writes a SELECT; the executor:
+- opens only `catalog.db`, read-only and with `query_only`;
+- installs a deny-by-default authorizer: only SELECT, reads of public columns and a short list of
+  functions. ATTACH, PRAGMA, writes, metadata, extensions and recursive CTEs are refused at prepare time;
+- caps VM steps and time (progress handler) and rows read, even when the SQL has no LIMIT;
+- requires a `product_id` column and hydrates products from the canonical table: the name, price and
+  availability shown on screen never come from the model's SQL.
 """
 
 from __future__ import annotations
@@ -38,21 +38,21 @@ MAX_ROWS_READ = 200
 MAX_PRODUCTS = 10
 DEFAULT_DISCOVER_CARDS = 3
 VM_STEP_INTERVAL = 1_000
-MAX_VM_CALLBACKS = 2_000  # ~2 milhões de instruções
+MAX_VM_CALLBACKS = 2_000  # ~2 million VM instructions
 MAX_QUERY_SECONDS = 2.0
 
-SCHEMA_DESCRIPTION = """Tabelas públicas do catálogo (SQLite, somente leitura):
+SCHEMA_DESCRIPTION = """Public catalog tables (SQLite, read-only):
 - categories(category_id, name, description)
 - products(product_id, category_id, name, name_search, description, specs, stock_quantity, status,
   availability, sellable, created_at, base_cents, promotion_percent, offer_cents, pix_cents)
-  * name_search: nome em minúsculas e sem acento, para LIKE.
-  * specs: JSON, ex. json_extract(specs, '$.strings') IN ('nylon','steel').
-  * availability: available | out_of_stock | discontinued | coming_soon. sellable = 1 só se available.
-  * base_cents: preço de tabela; offer_cents: preço vigente (com promoção ativa); pix_cents: preço no PIX.
+  * name_search: lowercase name without accents, for LIKE.
+  * specs: JSON, e.g. json_extract(specs, '$.strings') IN ('nylon','steel').
+  * availability: available | out_of_stock | discontinued | coming_soon. sellable = 1 only if available.
+  * base_cents: list price; offer_cents: current price (with active promotion); pix_cents: PIX price.
 - promotions(promotion_id, product_id, discount_percent, description, is_active)
-Categorias: 1 Guitarras, 2 Baixos, 3 Baterias e Percussão, 4 Teclados e Pianos, 5 Violões,
-6 Sopro (Madeiras), 7 Sopro (Metais), 8 Cordas Orquestrais, 9 Ukuleles.
-O resultado precisa ter a coluna product_id. Valores em centavos: R$ 800 = 80000."""
+Categories: 1 Guitarras (electric guitars), 2 Baixos (basses), 3 Baterias e Percussão (drums), 4 Teclados e Pianos
+(keyboards), 5 Violões (acoustic guitars), 6 Sopro Madeiras, 7 Sopro Metais, 8 Cordas Orquestrais, 9 Ukuleles.
+The result must include a product_id column. Amounts are in cents: R$ 800 = 80000."""
 
 
 class CatalogQueryError(Exception):
@@ -75,7 +75,7 @@ def _authorizer(action, arg1, arg2, db_name, trigger):
         return sqlite3.SQLITE_DENY
     if action == sqlite3.SQLITE_FUNCTION:
         return sqlite3.SQLITE_OK if (arg2 or "").lower() in ALLOWED_FUNCTIONS else sqlite3.SQLITE_DENY
-    return sqlite3.SQLITE_DENY  # inclui ATTACH, PRAGMA, escrita, RECURSIVE e qualquer ação nova
+    return sqlite3.SQLITE_DENY  # includes ATTACH, PRAGMA, writes, RECURSIVE and any new action
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:
@@ -86,16 +86,16 @@ def _connect(db_path: Path) -> sqlite3.Connection:
 
 
 def run_select(db_path: Path, sql: str, params: list | None = None) -> list[int]:
-    """Executa o SELECT do modelo e devolve os product_id na ordem, sem duplicatas."""
+    """Run the model's SELECT and return product_ids in order, without duplicates."""
     params = list(params or [])
     sql = sql.strip().rstrip(";").strip()
     if not sql:
-        raise CatalogQueryError("invalid_sql", "SQL vazio")
+        raise CatalogQueryError("invalid_sql", "empty SQL")
     if len(sql) > MAX_SQL_CHARS:
-        raise CatalogQueryError("invalid_sql", f"SQL acima de {MAX_SQL_CHARS} caracteres")
+        raise CatalogQueryError("invalid_sql", f"SQL longer than {MAX_SQL_CHARS} characters")
     if len(params) > MAX_PARAMS or not all(isinstance(p, (int, float, str)) and not isinstance(p, bool)
                                            for p in params):
-        raise CatalogQueryError("invalid_sql", "parâmetros devem ser até 12 valores int, float ou str")
+        raise CatalogQueryError("invalid_sql", "params must be up to 12 int, float or str values")
 
     con = _connect(db_path)
     started = time.monotonic()
@@ -111,16 +111,16 @@ def run_select(db_path: Path, sql: str, params: list | None = None) -> list[int]
     try:
         cur = con.execute(sql, params)
         if cur.description is None or "product_id" not in [d[0] for d in cur.description]:
-            raise CatalogQueryError("missing_product_id", "o SELECT precisa devolver a coluna product_id")
+            raise CatalogQueryError("missing_product_id", "the SELECT must return a product_id column")
         rows = cur.fetchmany(MAX_ROWS_READ)
     except CatalogQueryError:
         raise
     except sqlite3.DatabaseError as exc:
         msg = str(exc)
         if "interrupted" in msg:
-            raise CatalogQueryError("too_expensive", "consulta excedeu o orçamento de execução; filtre mais") from None
+            raise CatalogQueryError("too_expensive", "query exceeded the execution budget; add filters") from None
         if "not authorized" in msg or "prohibited" in msg:
-            raise CatalogQueryError("forbidden", "consulta fora do permitido: só SELECT nas tabelas públicas") from None
+            raise CatalogQueryError("forbidden", "query not allowed: only SELECT on the public tables") from None
         raise CatalogQueryError("invalid_sql", msg) from None
     except sqlite3.ProgrammingError as exc:
         raise CatalogQueryError("invalid_sql", str(exc)) from None
@@ -136,7 +136,7 @@ def run_select(db_path: Path, sql: str, params: list | None = None) -> list[int]
 
 
 def attribute(category_id: int, name: str, specs: dict) -> str:
-    """Um atributo curto e verificável para o card."""
+    """A short, verifiable attribute for the product card (customer-facing, in Portuguese)."""
     strings = {"nylon": "nylon", "steel": "aço"}.get(str(specs.get("strings", "")).lower())
     if category_id == 9:
         for size, label in (("soprano", "soprano"), ("concert", "concert"), ("tenor", "tenor"),
@@ -162,7 +162,7 @@ def search_name(text: str) -> str:
 
 
 def hydrate(db_path: Path, product_ids: list[int]) -> list[dict]:
-    """Lê da tabela canônica os fatos que podem ir para a tela, na ordem pedida."""
+    """Read the facts allowed on screen from the canonical table, in the requested order."""
     if not product_ids:
         return []
     con = _connect(db_path)
@@ -195,7 +195,7 @@ _BUDGET_RE = re.compile(r"(?:at[eé]|no m[aá]ximo|menos de|abaixo de)\s*r?\$?\s
 
 
 def budget_from_message(message: str) -> tuple[int, bool] | None:
-    """Teto explícito em centavos e se ele é "no PIX". Ex.: "até R$ 800" → (80000, False)."""
+    """Explicit budget cap in cents and whether it refers to PIX. E.g. "até R$ 800" -> (80000, False)."""
     m = _BUDGET_RE.search(message)
     if not m:
         return None
@@ -224,7 +224,7 @@ def query_catalog(db_path: Path, sql: str, params: list | None, intent: Intent,
     products = hydrate(db_path, ids[:MAX_ROWS_READ])
     dropped_unavailable = dropped_budget = 0
     if intent == "discover":
-        # Descoberta só oferece o que está à venda e dentro do teto que o cliente disse.
+        # Discovery only offers what is for sale and within the cap the customer stated.
         sellable = [p for p in products if p["availability"] == "available"]
         dropped_unavailable = len(products) - len(sellable)
         products = sellable

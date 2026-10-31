@@ -1,4 +1,4 @@
-# Dependências de teste. Playwright entra na S7.
+# Test dependencies. Playwright is added in S7.
 -r requirements.txt
 pytest==9.2.0
 iniconfig==2.3.1

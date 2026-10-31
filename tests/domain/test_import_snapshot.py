@@ -1,4 +1,4 @@
-"""Importador: snapshot real contra os oráculos e validações com dados sintéticos."""
+"""Importer: real snapshot against the oracles, and validation with synthetic data."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.import_snapshot import HEADERS, ImportError_, build
+from scripts.import_snapshot import HEADERS, SnapshotError, build
 
 
 def _rows(db: Path, sql: str, *params) -> list[sqlite3.Row]:
@@ -20,7 +20,7 @@ def _rows(db: Path, sql: str, *params) -> list[sqlite3.Row]:
         con.close()
 
 
-# --- snapshot real -----------------------------------------------------------------------------------
+# --- real snapshot -------------------------------------------------------------------------------------
 
 def test_manifest_counts_match_oracles(snapshot_build, oracles):
     manifest = json.loads((snapshot_build / "manifest.json").read_text())
@@ -71,7 +71,7 @@ def test_orders_db_has_no_personal_columns_and_only_demo_customers(snapshot_buil
     assert customers <= {2, 6, 7}
 
 
-# --- validação com dados sintéticos -------------------------------------------------------------------
+# --- validation with synthetic data -----------------------------------------------------------------
 
 def _synthetic(tmp_path: Path, **overrides: list[list[str]]) -> Path:
     data = {
@@ -105,18 +105,18 @@ def test_synthetic_snapshot_builds_with_bom(tmp_path):
     ("override", "message"),
     [
         ({"products": [["10", "100.5", "A", "1", "d", "3", "active", "{}", "2024-01-01"],
-                       ["10", "1", "B", "1", "d", "3", "active", "{}", "2024-01-01"]]}, "duplicado"),
+                       ["10", "1", "B", "1", "d", "3", "active", "{}", "2024-01-01"]]}, "duplicate"),
         ({"products": [["10", "100.5", "A", "9", "d", "3", "active", "{}", "2024-01-01"]]}, "category_id=9"),
-        ({"products": [["10", "R$ 100", "A", "1", "d", "3", "active", "{}", "2024-01-01"]]}, "monetário"),
+        ({"products": [["10", "R$ 100", "A", "1", "d", "3", "active", "{}", "2024-01-01"]]}, "money amount"),
         ({"products": [["10", "100", "A", "1", "d", "3", "active", "{quebrado", "2024-01-01"]]}, "JSON"),
-        ({"promotions": [["1", "10", "10", "X", "1"], ["2", "10", "5", "Y", "1"]]}, "segunda promoção ativa"),
+        ({"promotions": [["1", "10", "10", "X", "1"], ["2", "10", "5", "Y", "1"]]}, "second active promotion"),
         ({"order_items": [["1", "1", "99"]]}, "product_id=99"),
     ],
 )
 def test_invalid_rows_abort_with_line_and_reason(tmp_path, override, message):
-    with pytest.raises(ImportError_, match=message) as exc:
+    with pytest.raises(SnapshotError, match=message) as exc:
         build(_synthetic(tmp_path, **override), tmp_path / "out")
-    assert "linha" in str(exc.value)
+    assert "line" in str(exc.value)
 
 
 def test_failed_import_preserves_previous_build(tmp_path):
@@ -125,7 +125,7 @@ def test_failed_import_preserves_previous_build(tmp_path):
     (tmp_path / "bad").mkdir()
     first = build(_synthetic(tmp_path / "ok"), out)
     bad = _synthetic(tmp_path / "bad", order_items=[["1", "1", "99"]])
-    with pytest.raises(ImportError_):
+    with pytest.raises(SnapshotError):
         build(bad, out)
     assert json.loads((out / "manifest.json").read_text())["dataset_id"] == first["dataset_id"]
     assert not list(tmp_path.glob(".build-*"))

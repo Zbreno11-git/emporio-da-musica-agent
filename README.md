@@ -1,55 +1,70 @@
-# Empório da Música · agente de atendimento
+# Empório da Música · customer-service agent
 
-Protótipo em Python de um agente de atendimento por texto para a **Empório da Música**, loja fictícia de instrumentos musicais em Campo Grande/MS. Este projeto foi desenvolvido para o desafio técnico de AI Engineer da Artefact.
+A Python prototype of a text-based customer-service agent for **Empório da Música**, a fictional musical-instrument store in Campo Grande/MS, Brazil. The project is my answer to the Artefact AI Engineer technical challenge.
 
-O agente vai responder perguntas sobre catálogo, preços, formas de pagamento, pedidos e políticas da loja. Ele consulta os dados quando precisa de um fato e o manual quando precisa de uma regra. Quando falta informação, prepara um encaminhamento para a equipe.
+The agent answers questions about the catalog, prices, payment methods, orders and store policies. It queries the data when it needs a fact and the store manual when it needs a rule. When information is missing, it asks the customer or prepares a hand-off to the staff.
 
-## Estado atual (31/10/2026)
+> **Language.** The repository, code and documentation are in English, as required by the selection process. The agent talks to customers in **Brazilian Portuguese**, because the store and its customers are in Brazil and the challenge asks for a persona aligned with the store. The example conversations are kept in Portuguese with an English translation alongside ([D16](docs/DECISIONS.md)).
 
-**Setup concluído. A implementação do agente ainda não começou.**
+## Status (2026-10-31)
 
-| Pronto | Próximo |
+**Work in progress.** Data import, deterministic pricing and the restricted catalog SQL executor are done and tested. The LLM agent loop is next.
+
+| Done | Next |
 | --- | --- |
-| Repositório, `.gitignore` e ambiente Python 3.12.3 em `.venv` | Importador dos CSVs para SQLite e funções de preço testadas contra os valores de referência |
-| Arquitetura, decisões e inventário de referências e skills em [`docs/`](docs/) | Primeiro marco: o Gemini real responde o preço do Takamine GD20 (R$ 2.199,00) e, no turno seguinte, "e no PIX?" (R$ 2.089,05) |
-| Auditoria dos dados e do manual em [`docs/achados-dos-insumos.md`](docs/achados-dos-insumos.md) | Pedidos com identidade na sessão, busca no manual, interface e deploy no Cloud Run |
+| Snapshot importer (CSV → SQLite) with validation and a manifest | Gemini function-calling loop: Takamine GD20 price (R$ 2.199,00) → "e no PIX?" (R$ 2.089,05) |
+| Price, PIX and installment rules in integer cents, tested against reference values | Orders bound to the server session, policy retrieval by manual section |
+| Read-only catalog SQL executor with a deny-by-default authorizer | Ressonância web UI, Cloud Run deploy, real captured conversations |
 
-O roadmap está em [`docs/SESSOES.md`](docs/SESSOES.md) e o estado da sessão em curso está em [`docs/PROGRESSO.md`](docs/PROGRESSO.md).
+The roadmap is in [`docs/SESSIONS.md`](docs/SESSIONS.md) and the current state in [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
-## Stack escolhida
+## Stack
 
-| Peça | Escolha | Detalhe |
+| Piece | Choice | Details |
 | --- | --- | --- |
-| Linguagem e API | Python 3.12, FastAPI, Pydantic v2 | [arquitetura](docs/arquitetura.md) |
-| Modelo | Gemini com function calling (SDK `google-genai`) | O modelo exato será decidido por medição de custo-benefício ([D2](docs/DECISOES.md)) |
-| Dados | SQLite somente leitura para o catálogo e banco separado para pedidos | O dinheiro é tratado em centavos, com cálculo determinístico |
-| Políticas | Recuperação por seção do manual | Começa com busca lexical; a busca semântica só entra se a avaliação mostrar ganho |
-| Interface | HTML, CSS e JS servidos pelo FastAPI, com a identidade "Ressonância" | |
-| Demo | Um serviço no GCP Cloud Run | A mesma aplicação roda localmente |
+| Language and API | Python 3.12, FastAPI, Pydantic v2 | [architecture](docs/architecture.md) |
+| Model | Gemini with function calling (`google-genai` SDK) | The exact model is chosen by a cost-benefit benchmark ([D14](docs/DECISIONS.md)) |
+| Data | Read-only SQLite for the catalog, a separate database for orders | Money in integer cents, computed deterministically |
+| Policies | Retrieval by manual section | Lexical first; semantic only if the evaluation shows a gain |
+| Interface | HTML, CSS and JS served by FastAPI, "Ressonância" visual identity | |
+| Demo | A single GCP Cloud Run service | The same app runs locally |
 
-As justificativas completas estão em [`docs/DECISOES.md`](docs/DECISOES.md).
+All decisions and their reopening triggers are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
-## Setup local
+## Local setup
+
+The challenge data (CSVs and store manual) is **not** versioned ([D15](docs/DECISIONS.md)). You need the ZIP provided by Artefact.
 
 ```bash
 python3.12 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-cp .env.example .env    # preencha GEMINI_API_KEY localmente; nunca faça commit do .env
+.venv/bin/python -m pip install -r requirements-dev.txt
+cp .env.example .env            # set GEMINI_API_KEY locally; never commit .env
+
+# Build the demo databases from the challenge ZIP (or a directory containing the 6 CSVs)
+.venv/bin/python scripts/import_snapshot.py --source "path/to/Desafio_Técnico_AI_Engineer_2026-....zip"
+
+# Tests (no API key needed). Snapshot-based tests read EMPORIO_SNAPSHOT=<ZIP> or skip with a reason.
+EMPORIO_SNAPSHOT="path/to/the/zip" .venv/bin/python -m pytest
+.venv/bin/python scripts/mutation_check.py     # curated mutations that the tests must catch
 ```
 
-O arquivo de dependências e os comandos de importação, execução e testes entram com a primeira implementação. Os dados originais do desafio (CSVs e manual) não são versionados. O importador vai ler o ZIP fornecido pela Artefact a partir de um diretório local ignorado pelo Git.
+The commands to run the web app are added together with the first chat endpoint.
 
-## Estrutura
+## Repository layout
 
-A árvore atual contém só a documentação. A estrutura planejada para o código está em [`docs/arquitetura.md`](docs/arquitetura.md#árvore-planejada).
+The planned code layout is in [`docs/architecture.md`](docs/architecture.md#planned-tree).
 
 ```text
-README.md            este arquivo
-CLAUDE.md            instruções do projeto para o agente de código
-.env.example         nomes das variáveis de ambiente, sem valores
-docs/                arquitetura, decisões, achados, roadmap, progresso e uso de IA
+app/tools/quote.py        price, promotion, PIX and installments (cents)
+app/tools/catalog.py      restricted SQL executor + product hydration
+app/contracts.py          HTTP request/response models
+scripts/import_snapshot.py  CSV -> SQLite with validation and manifest
+scripts/check_staged.py   pre-commit scan for secrets, personal data and manual excerpts
+scripts/mutation_check.py curated mutation net
+tests/                    domain and tool tests
+docs/                     architecture, decisions, findings, roadmap, progress, AI usage
 ```
 
-## Uso de assistentes de IA
+## Use of AI assistants
 
-O registro está em [`docs/uso-de-ia.md`](docs/uso-de-ia.md) e é atualizado ao longo do projeto. Ele separa o que cada ferramenta fez das decisões que tomei e da forma como os resultados foram verificados.
+See [`docs/ai-usage.md`](docs/ai-usage.md). It is updated throughout the project and separates what each tool did from the decisions I made and how I verified the results.

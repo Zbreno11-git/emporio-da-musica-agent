@@ -1,81 +1,89 @@
-# Empório da Música — instruções para o agente
+# Empório da Música — agent instructions
 
-> Leia isto primeiro, em toda sessão. Este arquivo traz o que não está no código. O roadmap fica em `docs/SESSOES.md` e o estado atual em `docs/PROGRESSO.md`.
+> Read this first, every session. It holds what is not in the code. The roadmap is in `docs/SESSIONS.md` and the current state in `docs/PROGRESS.md`.
 
-## O que é
+## What this is
 
-Agente de atendimento por texto da Empório da Música, loja fictícia de instrumentos em Campo Grande/MS, para o desafio de AI Engineer da Artefact. O dono das decisões é Breno.
+A text customer-service agent for Empório da Música, a fictional instrument store in Campo Grande/MS, built for the Artefact AI Engineer challenge. Breno owns the decisions.
 
-O projeto usa:
-- Python, FastAPI e Gemini com function calling;
+The project uses:
+- Python, FastAPI and Gemini with function calling;
 - SQLite;
-- busca nas políticas por seção do manual;
-- interface HTML com a marca Ressonância;
-- demo no Cloud Run.
+- policy retrieval by manual section;
+- an HTML interface with the Ressonância brand;
+- a Cloud Run demo.
 
-Estado em 31/10/2026: setup concluído; o agente ainda não foi implementado.
+State on 2026-10-31: setup and S1 (data, pricing, catalog SQL) done; the agent loop is next.
 
-## O requisito que decide empates
+## Tie-breaking requirement
 
-> Preço, acesso a pedido e prazo errados reprovam o caso, mesmo com tom cordial. Quando faltar um fato, o agente pergunta ao cliente ou prepara o encaminhamento. Ele nunca inventa.
+> A wrong price, order access or deadline fails the case, even with a friendly tone. When a fact is missing, the agent asks the customer or prepares a hand-off. It never makes things up.
 
-## Regras invioláveis
+## Inviolable rules
 
-- **Segredos e insumos privados não entram no Git:**
+- **Deadline and delivery:**
+  - freeze on **Tue 2026-11-03 23:59 São Paulo time** (D11);
+  - delivery is a PDF in English named `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa`, uploaded to the Google Form, plus a reply to the e-mail with the repository link (D17). Breno submits.
+- **Language (D16):**
+  - repository, code, comments, docs, commit messages and the PDF are in **English**;
+  - the agent's replies to customers and the UI text are in **Brazilian Portuguese**.
+- **Secrets and private inputs never enter Git:**
   - `.env`;
-  - chaves Gemini, GCP e GitHub;
-  - `_insumos_privados/` (ZIPs, PDFs, CSVs brutos, guias internos);
-  - bancos derivados;
-  - nome, e-mail e telefone de clientes dos CSVs.
+  - Gemini, GCP and GitHub keys;
+  - `_private_inputs/` (ZIPs, PDFs, raw CSVs, internal guides);
+  - derived databases;
+  - customer name, e-mail and phone.
 
-  Antes de cada commit, conferir `git diff --cached --name-only` e rodar a varredura de segredos e dados pessoais.
-- **Dinheiro em centavos inteiros.** Os valores saem de `Decimal` construído a partir da string do CSV, com `ROUND_HALF_UP` uma única vez. O LLM nunca calcula preço: ele recebe os valores confirmados pelo backend.
-- **A identidade vem da sessão do servidor.** Um número de pedido digitado no chat identifica o registro procurado, não o cliente. Um pedido de outro perfil recebe a mesma resposta de um pedido inexistente.
-- **Execução real é a evidência.** Mocks servem a testes e ficam identificados como mocks. As conversas de `examples/` são capturas reais da versão entregue. Exemplos preparados nos guias não contam como execução.
-- **Ações sem integração não são declaradas como feitas.** Um encaminhamento fica `prepared`; não se fala em "registramos" nem se gera protocolo.
-- **Consertar primeiro.** Não se constrói sobre defeito conhecido sem autorização de Breno. Deploy, criação de recursos que geram custo e envio de e-mail exigem autorização na hora.
+  Before each commit: `git add`, then `.venv/bin/python scripts/check_staged.py` must print PASS.
+- **Money in integer cents.** Values come from `Decimal` built from the CSV string, with `ROUND_HALF_UP` once. The LLM never computes prices; it receives values confirmed by the backend.
+- **Identity comes from the server session.** An order number typed in chat identifies the record, not the customer. Another profile's order gets the same answer as a non-existent one.
+- **Real execution is the evidence.** Mocks are for tests and are labeled as mocks. `examples/` holds real captures of the delivered version. Prepared examples from the guides do not count.
+- **Actions without an integration are never claimed as done.** A hand-off stays `prepared`; no "we registered it", no ticket numbers.
+- **Fix first.** Do not build on a known defect without Breno's authorization. Deploys, billable resources and sending e-mail need authorization at the time.
 
-## Autoridade das fontes
+## Source of truth
 
-| Questão | Fonte (local: `_insumos_privados/`) |
+| Question | Source (local: `_private_inputs/`) |
 | --- | --- |
-| Entregáveis e prazo | PDF da Artefact (`desafio/`) e e-mail do processo |
-| Regras da loja | Manual v2.1 (`desafio/.../data/políticas_da_loja.pdf`); lacuna ou conflito decisivo leva a encaminhamento |
-| Produto, preço, estoque, pedido | Os 6 CSVs (`desafio/.../data/`) |
-| Marca e tela | Guia 01 (`guias/01-branding/`) e o mockup em `referencias-visuais/`, com um único avatar por turno |
-| Contratos técnicos | Guia 02 (`guias/02-backend/`), `exemplos/oraculos.json` (valores esperados) e `exemplos/turnos.json` (ilustração do contrato) |
-| Aplicação de referências e skills | Guia 03 (`guias/03-visao/`) |
+| Deliverables and deadline | Artefact case PDF (`challenge/`) and the selection e-mail (D11, D17) |
+| Store rules | Manual v2.1 (`challenge/.../data/políticas_da_loja.pdf`); a decisive gap or conflict leads to a hand-off |
+| Product, price, stock, order | The 6 CSVs (`challenge/.../data/`) |
+| Brand and screen | Guide 01 (`guides/01-branding/`) and the mockup in `visual-references/`, with a single avatar per turn |
+| Technical contracts | Guide 02 (`guides/02-backend/`); expected values in `tests/fixtures/oracles.json`; contract examples in `tests/fixtures/turns.json` (not versioned) |
+| Applying references and skills | Guide 03 (`guides/03-vision/`) |
 
-## Fronteiras e gatilhos em vigor
+## Boundaries in force
 
-| Fronteira | Regra |
+| Boundary | Rule |
 | --- | --- |
-| SQL do agente | Só no `catalog.db`, em modo somente leitura, com authorizer de negação por padrão. Pedidos ficam em outra conexão |
-| Parcelas | Onde §3 e §3.1 levam a resultados diferentes, retornar `needs_confirmation` e oferecer uma opção inequívoca |
-| Skills de terceiros | Ficam instaladas em `.claude/skills/` e ignoradas pelo Git (ver `docs/referencias-e-skills.md`) |
-| GCP | **Somente o projeto `emporio-da-musica-agent`. Nunca usar `altivaserra`, que é de outro projeto de Breno e continua como configuração `default` ativa no gcloud.** Todo comando gcloud deste repositório roda com `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio` e `--project emporio-da-musica-agent`, região `southamerica-east1`. Não alterar a configuração global ativa. |
+| Agent SQL | Only `catalog.db`, read-only, deny-by-default authorizer. Orders use a separate connection |
+| Installments | Where §3 and §3.1 diverge, return `needs_confirmation` and offer an option valid under every reading |
+| Third-party skills | Installed in `.claude/skills/` and ignored by Git (see `docs/references-and-skills.md`) |
+| GCP | **Only the `emporio-da-musica-agent` project. Never use `altivaserra`, which belongs to another of Breno's projects and remains the active `default` gcloud configuration.** Every gcloud command for this repo runs with `CLOUDSDK_ACTIVE_CONFIG_NAME=emporio` and `--project emporio-da-musica-agent`, region `southamerica-east1`. Do not change the active global configuration. |
 
-## Onde está o quê
+## Where things are
 
 | | |
 | --- | --- |
-| `docs/SESSOES.md` | Roadmap e "▶️ Começar a próxima sessão por aqui" |
-| `docs/PROGRESSO.md` | Estado atual e "retomar aqui" |
-| `docs/DECISOES.md` | Decisões, cada uma com o gatilho que a reabre |
-| `docs/achados-dos-insumos.md` | Divergências entre dados, manual e guias |
-| `docs/arquitetura.md` | Componentes e árvore planejada |
-| `docs/DIARIO.md` · `docs/ERROS.md` | Uma entrada por sessão · catálogo de erros por classe |
-| `docs/uso-de-ia.md` | Registro real de uso de Claude Code e ChatGPT (entregável) |
+| `docs/SESSIONS.md` | Roadmap and "▶️ Start the next session here" |
+| `docs/PROGRESS.md` | Current state and "resume here" |
+| `docs/DECISIONS.md` | Decisions, each with the trigger that reopens it |
+| `docs/source-findings.md` | Discrepancies between data, manual and guides |
+| `docs/architecture.md` | Components and planned tree |
+| `docs/JOURNAL.md` · `docs/ERRORS.md` | One entry per session · error catalog by class |
+| `docs/ai-usage.md` | Real log of Claude Code and ChatGPT usage (deliverable) |
 
-## Comandos
+## Commands
 
 ```bash
-.venv/bin/python --version   # 3.12.3
-# portões (testes, lint) entram com o primeiro código
+.venv/bin/python -m pytest                    # gates (snapshot tests need _private_inputs/ or EMPORIO_SNAPSHOT)
+.venv/bin/python scripts/mutation_check.py    # every mutation must be caught
+.venv/bin/python scripts/import_snapshot.py   # rebuild data/build/ from _private_inputs/challenge
+.venv/bin/python scripts/check_staged.py      # before every commit
 ```
 
-## Protocolo
+## Protocol
 
-- **Ao abrir uma sessão:** ler este arquivo, depois `docs/PROGRESSO.md`, depois `git status`.
-- **Ao fechar:** portões lidos, duas passadas de revisão, atualização dos documentos, commit com o porquê.
-- **Ao achar um defeito:** abrir `docs/ERROS.md` antes de consertar.
+- **Opening a session:** read this file, then `docs/PROGRESS.md`, then `git status`.
+- **Closing:** gates read, two review passes, documents updated, commit with the why.
+- **On finding a defect:** open `docs/ERRORS.md` before fixing it.

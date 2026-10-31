@@ -1,17 +1,17 @@
-"""Importa o snapshot da Artefact (6 CSVs) para os bancos da demo.
+"""Import the Artefact snapshot (6 CSVs) into the demo databases.
 
-Gera, em `--out` (padrão `data/build/`):
-- catalog.db       categorias, produtos (com preços materializados) e promoções. É o único banco
-                   que o SQL gerado pelo modelo pode ler.
-- orders-demo.db   perfis fictícios, pedidos e itens só dos clientes mapeados para a demo,
-                   sem nome, e-mail, telefone ou cidade.
-- manifest.json    hashes SHA-256 das fontes, contagens e versão do importador.
+Writes to `--out` (default `data/build/`):
+- catalog.db       categories, products (with materialized prices) and promotions. This is the only
+                   database the model-generated SQL can read.
+- orders-demo.db   fictitious profiles, plus orders and items of the customers mapped to the demo only,
+                   without name, e-mail, phone or city.
+- manifest.json    SHA-256 of the sources, row counts and importer version.
 
-Qualquer violação (cabeçalho, chave duplicada, vínculo órfão, moeda, JSON, duas promoções ativas no
-mesmo produto) interrompe a importação com arquivo, linha e motivo. Os arquivos novos são montados num
-diretório temporário e só substituem o conjunto anterior quando tudo passa.
+Any violation (header, duplicate key, orphan reference, money format, JSON, two active promotions on the
+same product) stops the import with file, line and reason. New files are assembled in a temporary
+directory and only replace the previous set when everything passes.
 
-Uso: .venv/bin/python scripts/import_snapshot.py --source <ZIP do desafio | diretório com os CSVs>
+Usage: .venv/bin/python scripts/import_snapshot.py --source <challenge ZIP | directory with the CSVs>
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ sys.path.insert(0, str(ROOT))
 from app.tools.quote import availability, price, to_cents  # noqa: E402
 
 IMPORTER_VERSION = "1"
-DEFAULT_SOURCE = ROOT / "_insumos_privados" / "desafio"
+DEFAULT_SOURCE = ROOT / "_private_inputs" / "challenge"
 DEFAULT_OUT = ROOT / "data" / "build"
 
 HEADERS = {
@@ -57,7 +57,8 @@ ORDER_STATUSES = {"pending", "confirmed", "shipped", "delivered", "cancelled"}
 PAYMENT_RE = re.compile(r"^(pix|debit|boleto|credit_(?:[1-9]|1[0-2])x)$")
 TRACKING_RE = re.compile(r"^BR[0-9A-Z]{9}BR$")
 
-# Perfis fictícios da demo. A identidade real do cliente fica só neste mapeamento interno.
+# Fictitious demo profiles. The real customer identity lives only in this internal mapping.
+# Labels are customer-facing, so they are in Portuguese.
 DEMO_PROFILES = [
     {"alias": "demo-a", "customer_id": 2, "label": "Cliente A · pedido em transporte"},
     {"alias": "demo-b", "customer_id": 6, "label": "Cliente B · pedido confirmado"},
@@ -65,13 +66,13 @@ DEMO_PROFILES = [
 ]
 
 
-class ImportError_(Exception):
-    """Falha de validação com referência a arquivo e linha."""
+class SnapshotError(Exception):
+    """Validation failure with a file and line reference."""
 
 
 def fail(table: str, line: int | None, reason: str) -> None:
-    where = f"{table}.csv" + (f", linha {line}" if line is not None else "")
-    raise ImportError_(f"{where}: {reason}")
+    where = f"{table}.csv" + (f", line {line}" if line is not None else "")
+    raise SnapshotError(f"{where}: {reason}")
 
 
 def _table_name(filename: str) -> str | None:
@@ -83,7 +84,7 @@ def _table_name(filename: str) -> str | None:
 
 
 def read_sources(source: Path) -> dict[str, tuple[bytes, str]]:
-    """Devolve {tabela: (bytes, nome de origem)} exigindo exatamente um arquivo por tabela."""
+    """Return {table: (bytes, source name)}, requiring exactly one file per table."""
     found: dict[str, list[tuple[bytes, str]]] = {t: [] for t in HEADERS}
     if source.is_file() and zipfile.is_zipfile(source):
         with zipfile.ZipFile(source) as z:
@@ -97,10 +98,10 @@ def read_sources(source: Path) -> dict[str, tuple[bytes, str]]:
             if table:
                 found[table].append((path.read_bytes(), str(path.relative_to(source))))
     else:
-        raise ImportError_(f"fonte não encontrada ou não é ZIP/diretório: {source}")
+        raise SnapshotError(f"source not found or not a ZIP/directory: {source}")
     for table, matches in found.items():
         if len(matches) != 1:
-            raise ImportError_(f"esperado exatamente 1 arquivo '* - {table}.csv', encontrado {len(matches)}")
+            raise SnapshotError(f"expected exactly 1 file '* - {table}.csv', found {len(matches)}")
     return {t: m[0] for t, m in found.items()}
 
 
@@ -108,26 +109,26 @@ def parse_csv(table: str, raw: bytes) -> list[tuple[int, dict[str, str]]]:
     text = raw.decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(text))
     if reader.fieldnames != HEADERS[table]:
-        fail(table, 1, f"cabeçalho {reader.fieldnames} difere do esperado {HEADERS[table]}")
+        fail(table, 1, f"header {reader.fieldnames} differs from expected {HEADERS[table]}")
     return [(i, row) for i, row in enumerate(reader, start=2)]
 
 
 def _int(table: str, line: int, field: str, value: str, minimum: int = 0) -> int:
     if not re.fullmatch(r"-?\d+", value.strip()):
-        fail(table, line, f"{field} não é inteiro: {value!r}")
+        fail(table, line, f"{field} is not an integer: {value!r}")
     n = int(value)
     if n < minimum:
-        fail(table, line, f"{field} abaixo de {minimum}: {n}")
+        fail(table, line, f"{field} below {minimum}: {n}")
     return n
 
 
 def _cents(table: str, line: int, field: str, value: str) -> int:
     if not re.fullmatch(r"\d+(\.\d{1,2})?", value.strip()):
-        fail(table, line, f"{field} não é um valor monetário válido: {value!r}")
+        fail(table, line, f"{field} is not a valid money amount: {value!r}")
     try:
         return to_cents(value)
     except (InvalidOperation, ValueError) as exc:
-        fail(table, line, f"{field} inválido: {exc}")
+        fail(table, line, f"invalid {field}: {exc}")
         raise
 
 
@@ -137,7 +138,7 @@ def _date(table: str, line: int, field: str, value: str, optional: bool = False)
     try:
         return date.fromisoformat(value.strip()).isoformat()
     except ValueError:
-        fail(table, line, f"{field} não é data ISO: {value!r}")
+        fail(table, line, f"{field} is not an ISO date: {value!r}")
         raise
 
 
@@ -146,7 +147,7 @@ def _unique(table: str, rows: list[tuple[int, dict]], key: str) -> dict[int, tup
     for line, row in rows:
         k = _int(table, line, key, row[key], minimum=1)
         if k in seen:
-            fail(table, line, f"{key}={k} duplicado (primeira ocorrência na linha {seen[k][0]})")
+            fail(table, line, f"duplicate {key}={k} (first seen on line {seen[k][0]})")
         seen[k] = (line, row)
     return seen
 
@@ -173,16 +174,16 @@ def validate(sources: dict[str, tuple[bytes, str]]) -> dict:
     for pid_, (line, r) in promotions.items():
         product_id = _int("promotions", line, "product_id", r["product_id"], minimum=1)
         if product_id not in products:
-            fail("promotions", line, f"product_id={product_id} não existe em products")
+            fail("promotions", line, f"product_id={product_id} does not exist in products")
         pct = _int("promotions", line, "discount_percent", r["discount_percent"], minimum=1)
         if pct >= 100:
-            fail("promotions", line, f"discount_percent fora do intervalo: {pct}")
+            fail("promotions", line, f"discount_percent out of range: {pct}")
         if r["is_active"] not in ("0", "1"):
-            fail("promotions", line, f"is_active deve ser 0 ou 1: {r['is_active']!r}")
+            fail("promotions", line, f"is_active must be 0 or 1: {r['is_active']!r}")
         is_active = r["is_active"] == "1"
         if is_active:
             if product_id in active_promo:
-                fail("promotions", line, f"segunda promoção ativa para product_id={product_id}")
+                fail("promotions", line, f"second active promotion for product_id={product_id}")
             active_promo[product_id] = pct
         promo_rows.append({"promotion_id": pid_, "product_id": product_id, "discount_percent": pct,
                            "description": r["description"].strip(), "is_active": int(is_active)})
@@ -191,16 +192,16 @@ def validate(sources: dict[str, tuple[bytes, str]]) -> dict:
     for pid, (line, r) in products.items():
         category_id = _int("products", line, "category_id", r["category_id"], minimum=1)
         if category_id not in categories:
-            fail("products", line, f"category_id={category_id} não existe em categories")
+            fail("products", line, f"category_id={category_id} does not exist in categories")
         if r["status"] not in PRODUCT_STATUSES:
-            fail("products", line, f"status desconhecido: {r['status']!r}")
+            fail("products", line, f"unknown status: {r['status']!r}")
         stock = _int("products", line, "stock_quantity", r["stock_quantity"])
         try:
             specs = json.loads(r["specs"])
         except json.JSONDecodeError as exc:
-            fail("products", line, f"specs não é JSON válido: {exc}")
+            fail("products", line, f"specs is not valid JSON: {exc}")
         if not isinstance(specs, dict):
-            fail("products", line, "specs deve ser um objeto JSON")
+            fail("products", line, "specs must be a JSON object")
         base = _cents("products", line, "price_brl", r["price_brl"])
         p = price(base, active_promo.get(pid, 0))
         avail = availability(r["status"], stock)
@@ -218,14 +219,14 @@ def validate(sources: dict[str, tuple[bytes, str]]) -> dict:
     for oid, (line, r) in orders.items():
         cid = _int("orders", line, "customer_id", r["customer_id"], minimum=1)
         if cid not in customers:
-            fail("orders", line, f"customer_id={cid} não existe em customers")
+            fail("orders", line, f"customer_id={cid} does not exist in customers")
         if r["status"] not in ORDER_STATUSES:
-            fail("orders", line, f"status desconhecido: {r['status']!r}")
+            fail("orders", line, f"unknown status: {r['status']!r}")
         if not PAYMENT_RE.match(r["payment_method"]):
-            fail("orders", line, f"payment_method desconhecido: {r['payment_method']!r}")
+            fail("orders", line, f"unknown payment_method: {r['payment_method']!r}")
         tracking = r["tracking_code"].strip() or None
         if tracking and not TRACKING_RE.match(tracking):
-            fail("orders", line, f"tracking_code fora do formato do manual §5.3: {tracking!r}")
+            fail("orders", line, f"tracking_code does not follow the manual §5.3 format: {tracking!r}")
         order_rows.append({
             "order_id": oid, "customer_id": cid,
             "order_date": _date("orders", line, "order_date", r["order_date"]), "status": r["status"],
@@ -240,20 +241,20 @@ def validate(sources: dict[str, tuple[bytes, str]]) -> dict:
         oid = _int("order_items", line, "order_id", r["order_id"], minimum=1)
         pid = _int("order_items", line, "product_id", r["product_id"], minimum=1)
         if oid not in orders:
-            fail("order_items", line, f"order_id={oid} não existe em orders")
+            fail("order_items", line, f"order_id={oid} does not exist in orders")
         if pid not in products:
-            fail("order_items", line, f"product_id={pid} não existe em products")
+            fail("order_items", line, f"product_id={pid} does not exist in products")
         item_rows.append({"order_id": oid, "product_id": pid,
                           "product_name": products[pid][1]["name"].strip(),
                           "quantity": _int("order_items", line, "quantity", r["quantity"], minimum=1)})
     orders_with_items = {i["order_id"] for i in item_rows}
     for o in order_rows:
         if o["order_id"] not in orders_with_items:
-            fail("orders", orders[o["order_id"]][0], f"order_id={o['order_id']} não tem itens")
+            fail("orders", orders[o["order_id"]][0], f"order_id={o['order_id']} has no items")
 
     for profile in DEMO_PROFILES:
         if profile["customer_id"] not in customers:
-            raise ImportError_(f"perfil {profile['alias']} aponta para cliente inexistente")
+            raise SnapshotError(f"profile {profile['alias']} points to a missing customer")
 
     return {"categories": cat_rows, "products": product_rows, "promotions": promo_rows,
             "orders": order_rows, "order_items": item_rows, "customer_count": len(customers)}
@@ -352,13 +353,13 @@ def build(source: Path, out: Path) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE,
-                        help="ZIP original do desafio ou diretório que contém os 6 CSVs")
+                        help="original challenge ZIP or a directory containing the 6 CSVs")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args(argv)
     try:
         manifest = build(args.source, args.out)
-    except ImportError_ as exc:
-        print(f"ERRO: importação interrompida; o conjunto anterior foi preservado. {exc}", file=sys.stderr)
+    except SnapshotError as exc:
+        print(f"ERROR: import stopped; the previous build was preserved. {exc}", file=sys.stderr)
         return 1
     print(json.dumps({k: manifest[k] for k in ("dataset_id", "counts", "sellable_count", "active_promotions", "demo")},
                      ensure_ascii=False))

@@ -1,14 +1,13 @@
-"""Preço, promoção, PIX e parcelas em centavos inteiros.
+"""Price, promotion, PIX and installments in integer cents.
 
-Regras do manual da loja (v2.1):
-- §3: PIX tem 5% sobre o preço de tabela; crédito em até 12x sem juros com parcela mínima de R$ 100.
-- §3.1: até 3x sem mínimo "exceto abaixo de R$ 50"; 4–6x mínimo R$ 80; 7–12x mínimo R$ 100;
-  combinação de formas de pagamento só acima de R$ 2.000.
-- §6.2: promoções não são cumulativas; o PIX não se aplica sobre preço promocional.
+Store manual (v2.1) rules:
+- §3: PIX gets 5% off the list price; credit card up to 12 interest-free installments, minimum R$ 100 each.
+- §3.1: up to 3x with no minimum "except below R$ 50"; 4–6x minimum R$ 80; 7–12x minimum R$ 100;
+  combining payment methods only above R$ 2,000.
+- §6.2: promotions do not stack; the PIX discount does not apply on top of a promotional price.
 
-Onde §3 e §3.1 levam a resultados diferentes, a decisão é `needs_confirmation` e a função
-oferece uma opção que vale em todas as leituras. O arredondamento é ROUND_HALF_UP, uma vez,
-no valor final.
+Where §3 and §3.1 lead to different outcomes, the decision is `needs_confirmation` and the function
+offers an option that is valid under every reading. Rounding is ROUND_HALF_UP, once, on the final value.
 """
 
 from __future__ import annotations
@@ -19,10 +18,10 @@ from typing import Literal
 
 PIX_DISCOUNT_PERCENT = 5
 MAX_INSTALLMENTS = 12
-GENERAL_MIN_INSTALLMENT_CENTS = 10_000  # §3 e §3.1 (7–12x)
+GENERAL_MIN_INSTALLMENT_CENTS = 10_000  # §3 and §3.1 (7–12x)
 MID_MIN_INSTALLMENT_CENTS = 8_000  # §3.1 (4–6x)
-LOW_THRESHOLD_CENTS = 5_000  # §3.1 (até 3x, "exceto abaixo de R$ 50")
-COMBINATION_MIN_CENTS = 200_000  # §3.1, "acima de R$ 2.000"
+LOW_THRESHOLD_CENTS = 5_000  # §3.1 (up to 3x, "except below R$ 50")
+COMBINATION_MIN_CENTS = 200_000  # §3.1, "above R$ 2,000"
 
 Method = Literal["table", "pix", "debit", "credit", "boleto"]
 Availability = Literal["available", "out_of_stock", "discontinued", "coming_soon"]
@@ -30,10 +29,10 @@ Decision = Literal["allowed", "rejected", "needs_confirmation", "unavailable"]
 
 
 def to_cents(value: str | Decimal) -> int:
-    """Converte BRL textual ("599.9") em centavos, sem passar por float."""
+    """Convert a textual BRL amount ("599.9") to cents without going through float."""
     amount = Decimal(value) if isinstance(value, Decimal) else Decimal(str(value).strip())
     if amount < 0:
-        raise ValueError(f"valor negativo: {value!r}")
+        raise ValueError(f"negative amount: {value!r}")
     return int((amount * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
@@ -48,7 +47,7 @@ def availability(status: str, stock_quantity: int) -> Availability:
         return "coming_soon"
     if status == "active":
         return "available" if stock_quantity > 0 else "out_of_stock"
-    raise ValueError(f"status desconhecido: {status!r}")
+    raise ValueError(f"unknown status: {status!r}")
 
 
 @dataclass(frozen=True)
@@ -60,16 +59,16 @@ class Pricing:
 
 
 def price(base_cents: int, promotion_percent: int = 0) -> Pricing:
-    """Preço vigente e PIX. Com promoção ativa, PIX = oferta (§6.2); sem promoção, 5% sobre a tabela (§3)."""
+    """Current price and PIX price. With an active promotion, PIX = offer (§6.2); otherwise 5% off list (§3)."""
     if not 0 <= promotion_percent < 100:
-        raise ValueError(f"percentual de promoção fora do intervalo: {promotion_percent}")
+        raise ValueError(f"promotion percent out of range: {promotion_percent}")
     offer = _percent_of(base_cents, 100 - promotion_percent) if promotion_percent else base_cents
     pix = offer if promotion_percent else _percent_of(base_cents, 100 - PIX_DISCOUNT_PERCENT)
     return Pricing(base_cents, promotion_percent, offer, pix)
 
 
 def split_installments(total_cents: int, n: int) -> list[int]:
-    """Reparte o total em n parcelas que somam exatamente o total (as primeiras levam o resto)."""
+    """Split the total into n installments that add up exactly (the first ones carry the remainder)."""
     q, r = divmod(total_cents, n)
     return [q + 1] * r + [q] * (n - r)
 
@@ -79,36 +78,36 @@ class InstallmentCheck:
     decision: Decision
     rule_ids: list[str]
     reason: str
-    safe_max_installments: int  # maior n válido em todas as leituras (1 = à vista)
+    safe_max_installments: int  # largest n valid under every reading (1 = single payment)
 
 
 def check_installments(total_cents: int, n: int) -> InstallmentCheck:
     if not 1 <= n <= MAX_INSTALLMENTS:
-        return InstallmentCheck("rejected", ["3"], f"o crédito vai de 1x a {MAX_INSTALLMENTS}x", safe_max(total_cents))
+        return InstallmentCheck("rejected", ["3"], f"credit goes from 1x to {MAX_INSTALLMENTS}x", safe_max(total_cents))
     smallest = split_installments(total_cents, n)[-1]
     safe = safe_max(total_cents)
     if n == 1 or smallest >= GENERAL_MIN_INSTALLMENT_CENTS:
-        return InstallmentCheck("allowed", ["3", "3.1"], "parcela atende a todas as leituras", safe)
+        return InstallmentCheck("allowed", ["3", "3.1"], "installment meets every reading", safe)
     if n >= 7:
-        return InstallmentCheck("rejected", ["3", "3.1"], "de 7x a 12x a parcela mínima é R$ 100,00", safe)
+        return InstallmentCheck("rejected", ["3", "3.1"], "from 7x to 12x the minimum installment is R$ 100.00", safe)
     if n >= 4:
         if smallest < MID_MIN_INSTALLMENT_CENTS:
-            return InstallmentCheck("rejected", ["3", "3.1"], "de 4x a 6x a parcela mínima é R$ 80,00", safe)
+            return InstallmentCheck("rejected", ["3", "3.1"], "from 4x to 6x the minimum installment is R$ 80.00", safe)
         return InstallmentCheck(
             "needs_confirmation", ["3", "3.1"],
-            "o §3.1 aceita parcela a partir de R$ 80,00 em 4x–6x, mas a tabela do §3 indica R$ 100,00", safe,
+            "§3.1 accepts installments from R$ 80.00 in 4x–6x, but the §3 table states R$ 100.00", safe,
         )
     if total_cents < LOW_THRESHOLD_CENTS:
-        return InstallmentCheck("rejected", ["3.1"], "compras abaixo de R$ 50,00 não são parceladas", safe)
+        return InstallmentCheck("rejected", ["3.1"], "purchases below R$ 50.00 are not split", safe)
     return InstallmentCheck(
         "needs_confirmation", ["3", "3.1"],
-        "a regra até 3x (\"exceto abaixo de R$ 50\") admite mais de uma leitura e a tabela do §3 indica R$ 100,00",
+        "the up-to-3x rule (\"except below R$ 50\") has more than one reading and the §3 table states R$ 100.00",
         safe,
     )
 
 
 def safe_max(total_cents: int) -> int:
-    """Maior número de parcelas em que a menor parcela é de pelo menos R$ 100 (válido em todas as leituras)."""
+    """Largest installment count whose smallest installment is at least R$ 100 (valid under every reading)."""
     for n in range(MAX_INSTALLMENTS, 1, -1):
         if split_installments(total_cents, n)[-1] >= GENERAL_MIN_INSTALLMENT_CENTS:
             return n
@@ -152,16 +151,16 @@ def quote(
     avail = availability(status, stock_quantity)
     p = price(base_cents, promotion_percent)
     if avail != "available":
-        # Promoção e PIX de item indisponível não autorizam oferta (§6.2, §7.3).
+        # Promotion and PIX prices of an unavailable item do not authorize an offer (§6.2, §7.3).
         return Quote(product_id, avail, method, installments, base_cents, 0, None, None, [],
-                     "unavailable", ["7.3"], "produto sem venda imediata", None)
+                     "unavailable", ["7.3"], "product not available for immediate sale", None)
     rules = ["6.2"] if promotion_percent else []
     if method != "credit":
         if installments != 1:
             return Quote(product_id, avail, method, installments, base_cents, promotion_percent, p.offer_cents,
-                         None, [], "rejected", ["3"], "só o cartão de crédito é parcelado", None)
+                         None, [], "rejected", ["3"], "only credit card payments can be split", None)
         payment = p.pix_cents if method == "pix" else p.offer_cents
-        reason = "PIX não se soma à promoção" if method == "pix" and promotion_percent else "pagamento à vista"
+        reason = "PIX does not stack with the promotion" if method == "pix" and promotion_percent else "single payment"
         return Quote(product_id, avail, method, 1, base_cents, promotion_percent, p.offer_cents, payment,
                      [payment], "allowed", ["3", *rules], reason, None)
     check = check_installments(p.offer_cents, installments)

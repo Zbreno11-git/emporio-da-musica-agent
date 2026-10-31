@@ -1,8 +1,8 @@
-"""Fixtures compartilhadas.
+"""Shared fixtures.
 
-Os testes que dependem do snapshot real da Artefact procuram a fonte em `EMPORIO_SNAPSHOT` (ZIP ou
-diretório) ou em `_insumos_privados/desafio/`. Sem a fonte, eles são pulados com o motivo explícito; os
-testes de regra pura e os de validação com dados sintéticos rodam sempre.
+Tests that depend on the real Artefact snapshot look for it in `EMPORIO_SNAPSHOT` (ZIP or directory) or in
+`_private_inputs/challenge/`. Without it they are skipped with an explicit reason; pure-rule tests and
+validation tests on synthetic data always run.
 """
 
 from __future__ import annotations
@@ -19,23 +19,23 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 def snapshot_source() -> Path | None:
     env = os.environ.get("EMPORIO_SNAPSHOT")
-    candidates = [Path(env)] if env else [ROOT / "_insumos_privados" / "desafio"]
+    candidates = [Path(env)] if env else [ROOT / "_private_inputs" / "challenge"]
     return next((c for c in candidates if c.exists()), None)
 
 
 @pytest.fixture(scope="session")
 def oracles() -> dict:
-    return json.loads((FIXTURES / "oraculos.json").read_text())
+    return json.loads((FIXTURES / "oracles.json").read_text())
 
 
 @pytest.fixture(scope="session")
 def snapshot_build(tmp_path_factory) -> Path:
-    """Constrói os bancos do snapshot real num diretório temporário (nunca toca `data/build/`)."""
+    """Build the real snapshot databases in a temporary directory (never touches `data/build/`)."""
     from scripts.import_snapshot import build
 
     source = snapshot_source()
     if source is None:
-        pytest.skip("snapshot da Artefact ausente: defina EMPORIO_SNAPSHOT=<ZIP do desafio>")
+        pytest.skip("Artefact snapshot missing: set EMPORIO_SNAPSHOT=<challenge ZIP>")
     out = tmp_path_factory.mktemp("snapshot") / "build"
     build(source, out)
     return out

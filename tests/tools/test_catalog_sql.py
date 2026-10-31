@@ -1,4 +1,4 @@
-"""Executor SQL do catálogo: violações bloqueadas pelo código e consultas legítimas."""
+"""Catalog SQL executor: violations blocked by code, and legitimate queries."""
 
 from __future__ import annotations
 
@@ -26,10 +26,10 @@ def catalog(snapshot_build):
         ("INSERT INTO categories VALUES (99, 'x', 'y')", "forbidden"),
         ("PRAGMA table_info(products)", "forbidden"),
         ("SELECT name AS product_id FROM sqlite_master", "forbidden"),
-        ("SELECT order_id AS product_id FROM orders", "invalid_sql"),  # não existe no catalog.db
+        ("SELECT order_id AS product_id FROM orders", "invalid_sql"),  # does not exist in catalog.db
         ("WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c) SELECT x AS product_id FROM c", "forbidden"),
         ("SELECT load_extension('x') AS product_id", "forbidden"),
-        ("SELECT length(randomblob(100000000)) AS product_id", "forbidden"),  # função fora da lista
+        ("SELECT length(randomblob(100000000)) AS product_id", "forbidden"),  # function not on the allowlist
         ("SELECT 1 AS product_id WHERE sqlite_version() <> ''", "forbidden"),
     ],
 )
@@ -70,7 +70,7 @@ def test_rows_read_are_capped_without_limit(catalog, monkeypatch):
     import app.tools.catalog as cat
 
     monkeypatch.setattr(cat, "MAX_ROWS_READ", 5)
-    ids = run_select(catalog, "SELECT product_id FROM products ORDER BY product_id")  # 65 ids distintos, sem LIMIT
+    ids = run_select(catalog, "SELECT product_id FROM products ORDER BY product_id")  # 65 distinct ids, no LIMIT
     assert ids == [81, 82, 83, 84, 85]
 
 
@@ -86,7 +86,7 @@ def test_discover_drops_unavailable_and_over_budget_even_if_sql_forgets(catalog)
     sql = "SELECT product_id FROM products WHERE category_id = 5 ORDER BY offer_cents"
     result = query_catalog(catalog, sql, [], "discover", "violões até R$ 800", limit=10)
     assert all(p["availability"] == "available" and p["offer_cents"] <= 80000 for p in result.products)
-    assert result.dropped_unavailable >= 1  # 96 (sem estoque) e 113 (descontinuado)
+    assert result.dropped_unavailable >= 1  # 96 (out of stock) and 113 (discontinued)
 
 
 def test_lookup_keeps_unavailable_to_explain_state(catalog):

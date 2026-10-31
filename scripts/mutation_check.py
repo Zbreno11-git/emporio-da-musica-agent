@@ -1,8 +1,8 @@
-"""Rede curada de mutações: cada mutação é um defeito real que um teste específico precisa derrubar.
+"""Curated mutation net: each mutation is a real defect that one specific test must catch.
 
-Para cada item: aplica a troca no arquivo, roda só o teste esperado e restaura o original.
-Uma mutação que "escapa" (o teste continua verde) prova que o teste não protege aquela regra.
-Uso: .venv/bin/python scripts/mutation_check.py
+For each item: apply the change to the file, run only the expected test and restore the original.
+A mutation that "escapes" (the test stays green) proves the test does not protect that rule.
+Usage: .venv/bin/python scripts/mutation_check.py
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ Q, I, C = "app/tools/quote.py", "scripts/import_snapshot.py", "app/tools/catalog
 TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py", "tests/tools/test_catalog_sql.py"
 
 MUTATIONS = [
-    # (arquivo, trecho original, defeito, teste que tem de cair)
+    # (file, original snippet, defect, test that must fail)
     (Q, "    pix = offer if promotion_percent else _percent_of(base_cents, 100 - PIX_DISCOUNT_PERCENT)",
      "    pix = _percent_of(offer, 100 - PIX_DISCOUNT_PERCENT)", f"{TQ}::test_pix_is_not_applied_over_promotion"),
     (Q, "MID_MIN_INSTALLMENT_CENTS = 8_000", "MID_MIN_INSTALLMENT_CENTS = 10_000", f"{TQ}::test_installment_rules"),
@@ -27,12 +27,12 @@ MUTATIONS = [
     (I, "        if k in seen:", "        if False:", f"{TI}::test_invalid_rows_abort_with_line_and_reason"),
     (I, "            if product_id in active_promo:", "            if False:",
      f"{TI}::test_invalid_rows_abort_with_line_and_reason"),
-    (I, "        staging.rename(out)\n", "        staging.rename(out)\n        raise ImportError_('x')\n",
+    (I, "        staging.rename(out)\n", "        staging.rename(out)\n        raise SnapshotError('x')\n",
      f"{TI}::test_failed_import_preserves_previous_build"),
     (I, '    demo_orders = [o for o in data["orders"] if o["customer_id"] in demo_ids]',
      '    demo_orders = list(data["orders"])',
      f"{TI}::test_orders_db_has_no_personal_columns_and_only_demo_customers"),
-    (C, "    return sqlite3.SQLITE_DENY  # inclui", "    return sqlite3.SQLITE_OK  # inclui",
+    (C, "    return sqlite3.SQLITE_DENY  # includes", "    return sqlite3.SQLITE_OK  # includes",
      f"{TC}::test_violations_are_blocked"),
     (C, '        return sqlite3.SQLITE_OK if (arg2 or "").lower() in ALLOWED_FUNCTIONS else sqlite3.SQLITE_DENY',
      "        return sqlite3.SQLITE_OK", f"{TC}::test_violations_are_blocked"),
@@ -57,7 +57,7 @@ def main() -> int:
         path = ROOT / rel
         original = path.read_text()
         if original.count(old) != 1:
-            print(f"ÂNCORA INVÁLIDA em {rel}: {old.strip()[:60]!r}")
+            print(f"INVALID ANCHOR in {rel}: {old.strip()[:60]!r}")
             return 2
         path.write_text(original.replace(old, new))
         try:
@@ -67,8 +67,8 @@ def main() -> int:
             path.write_text(original)
         caught = run.returncode != 0
         escaped += not caught
-        print(("PEGA   " if caught else "ESCAPA ") + f"{rel}: {new.strip()[:70]}")
-    print(f"{len(MUTATIONS) - escaped}/{len(MUTATIONS)} mutações pegas")
+        print(("CAUGHT  " if caught else "ESCAPED ") + f"{rel}: {new.strip()[:70]}")
+    print(f"{len(MUTATIONS) - escaped}/{len(MUTATIONS)} mutations caught")
     return 1 if escaped else 0
 
 
