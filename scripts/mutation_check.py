@@ -17,6 +17,7 @@ TQ, TI, TC = "tests/domain/test_quote.py", "tests/domain/test_import_snapshot.py
 A, M, S = "app/agent.py", "app/main.py", "app/session.py"
 TH = "tests/http/test_chat_api.py"
 O, P, TO, TP = "app/tools/orders.py", "app/tools/policies.py", "tests/tools/test_orders.py", "tests/tools/test_policies.py"
+B, CM, TCM = "scripts/benchmark_models.py", "scripts/cost_model.py", "tests/evals/test_cost_model.py"
 
 MUTATIONS = [
     # (file, original snippet, defect, test that must fail)
@@ -79,6 +80,12 @@ MUTATIONS = [
     (A, '        if state.profile_required:\n            next_action = "choose_profile"',
      '        if False:\n            next_action = "choose_profile"', f"{TH}::test_order_as_visitor_asks_for_profile"),
     (S, "            if self.count >= self.limit:", "            if False:", f"{TH}::test_daily_cap_stops_model_calls"),
+    (B, '    out = usage.get("output", 0) + usage.get("thoughts", 0)', '    out = usage.get("output", 0)',
+     f"{TCM}::test_cost_per_turn_bills_thinking_tokens_as_output"),
+    (CM, "    return mean_usd_per_turn * turns * conversations", "    return mean_usd_per_turn * conversations",
+     f"{TCM}::test_monthly_projection_is_mean_times_turns_times_conversations"),
+    (CM, '                + min(gib_s, free["gib_seconds"]) * free["tier1_gib_second_usd"]',
+     '                + gib_s * free["tier1_gib_second_usd"]', f"{TCM}::test_cloud_run_gross_and_free_tier"),
 ]
 
 

@@ -2,7 +2,7 @@
 
 Each session is a 1–2 hour package that ends with something verifiable and gets a journal entry. Checkpoint status lives in [`PROGRESS.md`](PROGRESS.md).
 
-**Progress: 7 of 11 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4). S5–S8 are next.
+**Progress: 8 of 13 sessions closed** (S0, S0b, S1, S-EN, S2, S3, S4, S5 benchmark). Next: S5.2 cost model, S5.3, S6, S6b, S7, S8.
 
 Each session is tagged by the kind of check it needs:
 - **[OFF]** runs offline;
@@ -112,86 +112,239 @@ See the "RESUME HERE" block in [`PROGRESS.md`](PROGRESS.md).
   - **Does:** `Dockerfile` (python:3.12-slim); `.gcloudignore` audited with `gcloud meta list-files-for-upload`; `gcloud run deploy --source . --region southamerica-east1 --max-instances 1 --min-instances 0`.
   - **✅ C6:** `/healthz` 200; milestone 1 via curl on the URL; incognito window; revision and commit noted in the README.
 
-## Day 2 · 2026-11-02 (code complete)
+### ✅ S5 · Cost-benefit benchmark (done 2026-10-31) [GEM]
+- [x] 3 models × 2 runs × 9 turns; 0 blocker turns for all; `gemini-3.1-flash-lite` pinned by D14 ([report](../evals/model-benchmark.md))
 
-### S5 · Cost-benefit benchmark (≈1.5 h) [GEM]
-- **Does:** `scripts/benchmark_models.py`, 2 models × 2 repetitions over the fixed battery:
-  - Takamine → PIX;
-  - Kalani on PIX;
-  - nylon up to R$ 800;
-  - order 8 as A and as B;
-  - return with a missing fact;
-  - out of scope;
-  - shipping of exactly R$ 500.
+> **Plan for the remaining sessions** (written 2026-10-31 16:40 SP after the compact; facts measured that day: Playwright browsers cached but the Python package not installed, node v24 present, no pandoc; `evals/pricing.json` not shipped in the image; the out-of-scope run 2 named "Ibanez GSR200" with no tool result — a product claim without evidence, treated as a defect in S5.3).
 
-  Measures the 3 blockers against oracles and profile, tool and arguments, cold and warm latency, and tokens (`usage_metadata`). Cost only with a price verified that day.
-- **Cost model (D19).** For every benchmark turn, record input, output and thinking tokens and the turn type:
-  - catalog search;
-  - quote / PIX;
-  - order;
-  - policy;
-  - hand-off;
-  - out of scope.
+### Schedule (São Paulo time)
+| When | Sessions | Checkpoint |
+| --- | --- | --- |
+| Sat 31/10, evening | S5.2 cost model, S5.3 prompt fix | C7b |
+| Sun 01/11 | S6 UI, S6b `/admin` | C8, C8b |
+| Mon 02/11 | S7 testing & hardening, second revision. **Code complete** | C9 |
+| Tue 03/11, done by 20:00 | S8 capture, review, README, clean clone, PDF | C10 |
 
-  Fetch the official Gemini price list on the day and compute the cost per turn, the average per answer and the cost per type. Project the monthly cost for the store under 3 stated volume scenarios (e.g. 500, 2,000 and 10,000 conversations/month with a measured turns-per-conversation average). Add Cloud Run from the billing report. Output: `evals/cost-model.md`, which feeds the PDF.
-- **Selection rule (D14):** the cheapest model that passes the 3 blockers in every run; tie → lower median latency.
-- **✅ C7:** `evals/model-benchmark.md`; `GEMINI_MODEL` pinned; spend checked in billing.
+If the work runs late, cut in this order (unchanged):
+1. technical panel;
+2. animations;
+3. the 1280 px screenshot set;
+4. the BRL conversion in the cost model.
 
-### S6 · Ressonância interface (≈2 h) [OFF + GEM]
-- **Does:** `/frontend-design` with guide 01. The screen has:
-  - exact tokens and local WOFF2 fonts (OFL);
-  - slogan and 3 suggestions at the opening, collapsed on first send;
-  - speech before cards and **one avatar per turn**;
-  - card with name, attribute, price (list, % and current) and availability in words;
-  - profile selector only on `choose_profile`;
-  - copyable hand-off summary;
-  - sources on demand, `aria-live`, collapsed technical panel;
-  - "Tentar novamente" that keeps the draft.
+**Never cut:** the blockers, the real capture, the reproducible README, the PDF.
 
-  UI text is in PT-BR.
-- **✅ C8:** screenshots at 320, 390 and 1280 px; name and price legible; card price == DTO.
+---
 
-### S6b · `/admin` panel (≈1 h) [OFF + GEM] — D20
-- **Does:** a `TurnMetrics` collector in process memory, filled after each successful turn from the trace. It records:
-  - cost from usage × `evals/pricing.json`;
-  - a topic label derived from the tools and sections (`price/PIX`, `catalog search`, `order`, `return §4.1`, `shipping §5.1`, `hand-off`, `out of scope`, …);
-  - the product ids shown on cards.
+### S5.2 · Cost model (≈1 h) [OFF + one web fetch] → C7b
+**Does:** add `scripts/cost_model.py`.
+- **Inputs:**
+  - `evals/benchmark/2026-10-31-{gemini-3.1-flash-lite,gemini-3.5-flash-lite}.jsonl`;
+  - `evals/pricing.json`.
 
-  Plus `GET /admin` (HTML) and `GET /admin/api/stats` (JSON), both requiring `ADMIN_TOKEN` (header `X-Admin-Token` or a form that keeps it only in memory). Without a valid token the answer is 404. No raw message text is stored anywhere. The page says "since instance start <time>".
-- **Deploy:** secret `admin-token` created via stdin from a locally generated value; read only by `emporio-agent-sa`; Breno keeps the value in `.env`.
-- **✅** Tests:
-  - no token → 404;
-  - wrong token → 404;
-  - right token → stats whose average cost equals the hand-computed value from fake usage;
-  - the top 3 products follow the card counts;
-  - the topic counts follow the tools;
-  - mutations added for the token check and the "no raw text" rule (a test greps the collector state for the message).
+  It reuses `cost_usd` from `scripts/benchmark_models.py` by import, so the formula has one source (thinking tokens are billed as output).
+- **Output:** `evals/cost-model.md` (plus `--json` for the PDF), with these sections.
+  1. **Per answer:** the mean, median and max cost per turn, and the mean number of model calls per turn, for each model.
+  2. **Per turn type:** quote, catalog search, order, policy, hand-off and out of scope. Columns: turns, average input, average output plus thinking, and average cost.
+  3. **Monthly projection:** 500, 2,000 and 10,000 conversations, at a stated assumption of **4 turns per conversation**. Each row multiplies the measured mean cost per turn, so the arithmetic is visible.
+  4. **Sensitivity:**
+     - 2 turns and 8 turns per conversation;
+     - an "every turn costs like the most expensive type" line;
+     - a history-growth line from the measured Takamine step 0 → 1 input delta (5457 → 6010 tokens).
+  5. **Model lines:**
+     - `3.5-flash-lite` is the migration path after the 2027-05-07 shutdown;
+     - the price doubling of `3.6-flash` on 2027-01-01 is noted only.
+  6. **Cloud Run as a separate line.** Fetch the official Cloud Run pricing page that day and record the URL and the date in a new `"cloud_run"` block in `pricing.json`. Use the `southamerica-east1` tier and request-based billing with min-instances 0.
+     - Estimate vCPU-seconds and GiB-seconds from the measured median turn latency (1.85 s × turns) at 1 vCPU / 0.5 GiB, and requests at about 2 per turn (chat + static).
+     - Show it with and without the monthly free tier. Concurrency of 20 makes this an upper bound; say so.
+  7. **BRL:** state one USD→BRL rate with its source (the Banco Central PTAX of the last business day) and its date. The client is a Brazilian store.
+  8. **Caveats:**
+     - 18 turns per model;
+     - the benchmark's turn-type mix is not the store's real mix;
+     - token counts include the about 6k tokens of tool schema and system prompt per call.
 
-### S7 · Testing and hardening, documented (≈2 h) [OFF + URL] — D21
-- **Does:** install Playwright in `requirements-dev.txt`; then `/webapp-testing` with Playwright in Python and 2 isolated contexts:
-  - Takamine → PIX;
-  - order 8 as a visitor, with the wrong profile and with a profile switch;
-  - provider error via the labeled fake;
-  - no `networkidle`, no sleeps.
+**✅ C7b:**
+- `.venv/bin/python scripts/cost_model.py` prints the `3.1-flash-lite` mean of **0.00167 USD/turn**, which must match `benchmark_models.py --summarize-only`, and the `3.5-flash-lite` mean of **0.00224**.
+- The projection rows equal mean × 4 × volume. For example, 2,000 conversations → about **US$ 13.4/month** of Gemini on `3.1-flash-lite`.
+- A test (`tests/evals/test_cost_model.py`) recomputes one row from 2 synthetic usage rows by hand.
+- A mutation in `mutation_check.py` (thinking tokens dropped from the output cost) must be caught by it.
 
-  Failures: 504, 429, empty tool result, resend with the same `request_id`, concurrent 409, and 410.
-- **QA report:** `docs/qa/README.md` with one row per case (id, steps, expected, observed, verdict, screenshot) and the screenshots under `docs/qa/screens/NN-scenario-viewport.png`, taken from the **hosted** revision for the customer flows and from the local app with the labeled fake model for forced failures.
-- **Hardening pass:**
-  - security headers (CSP without inline script if feasible, `X-Content-Type-Options`, `Referrer-Policy`, frame-ancestors);
-  - a request body size limit;
-  - checking `/admin` is not linked anywhere;
-  - error messages without stack traces;
-  - the daily cap and rate limit exercised on the URL with low limits in a test revision, or locally only if that costs too much — decide by cost.
-- **✅ C9:** `pytest` and `pytest tests/e2e` green; QA report complete with screenshots; the new revision answers milestone 1 and `/health`.
+**🐞 Expected trouble:**
+- The Cloud Run page may show a different tier or table layout → record exactly what was read, with the date, and mark the number "estimate".
 
-## Day 3 · 2026-11-03 (freeze 23:59 São Paulo)
+### S5.3 · Out-of-scope fix (≈30 min) [GEM]
+**Does:**
+1. **Prompt (`app/prompts.py`):**
+   - rule 1 gains "never name a product, model or brand the store sells unless it came from a tool result in this conversation";
+   - the "What the store sells" paragraph gains: "for the instrument part of a mixed question, call query_catalog before suggesting anything".
+2. **Benchmark (`benchmark_models.py`):** the `out_of_scope` step gets a new blocker check: any capitalized model name in the text must belong to a card. This is implemented as "the text names no product from the catalog that is not on a card", with names checked against `catalog.db`. Two invented names still need a non-catalog check, so a second **quality** check flags "a bass was recommended but no cards".
+3. **Re-run:** add `--scenarios` to the benchmark and rerun `out_of_scope` ×2 plus `takamine_pix` ×1 (regression) on `3.1-flash-lite`.
 
-### S8 · Real capture, review and delivery (≈2–3 h, done by 20:00) [URL]
-- **8.1 Capture.** 5 conversations on the URL (discovery, promotion + PIX, authorized order, return, out of scope) in `examples/*.md`. Each is in PT-BR with an English translation, model, commit, manifest, tools, duration and a screenshot.
-- **8.2 Review.** `/qa-response` on each, with tool results and manual sections. A blocker means fix the cause and capture again.
-- **8.3 Final README.** Setup, decisions, limitations, AI usage, URL and revision; reproduction from a clean clone.
-- **8.4 Delivery PDF.** English, named `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`, with repository link, demo URL, decision summary, examples index and the measured cost model (average cost per answer, per turn type, monthly projection). A reply text for the e-mail is also prepared.
-- **✅ C10:** 5/5 without blockers; `scripts/check_staged.py` PASS; `git ls-remote` == HEAD; last commit before 23:59 São Paulo on 2026-11-03; PDF handed to Breno.
+**✅ Checkpoint:**
+- 2/2 out-of-scope runs call `query_catalog`, return at least one available bass card, and name no product that is not on a card;
+- Takamine is still 219900 → 208905;
+- the result is appended to `evals/model-benchmark.md` with its date.
+
+**🐞 Expected trouble:**
+- If lite still skips the tool → a server-side text check in `check_text`: a catalog product name in the text without a card counts as unsupported, with one correction and then the fallback.
+- That check becomes a new mutation.
+
+### S6 · Ressonância UI (≈2.5 h) [OFF + GEM] → C8
+**Read first:** `/frontend-design`, `frontend-e-ux`, the full guide 01 (§4 tokens, §5 conversation anatomy, §7 acceptance list), and the mockup `_private_inputs/guides/01-branding/assets/ui-opcao-1-emporio_mockup.png`.
+
+**Does:** split `app/static/` into `index.html` + `app.css` + `app.js`, with no inline script so that S7's CSP can forbid it.
+- **Brand:**
+  - exact tokens from guide 01 §4;
+  - Fraunces 600 and Source Sans 3 (400/600/700) as local WOFF2 (latin + latin-ext), from `@fontsource` on jsdelivr, with `OFL.txt` alongside and `font-display: swap`;
+  - one avatar per agent turn.
+- **Opening:** the slogan and 3 suggestion chips, collapsed after the first send.
+- **Cards** (built in `app.js` from the DTO only):
+  - name, attribute, availability in words;
+  - the price block shows the list price struck through, the percentage and the current price when `discount_percent > 0`, otherwise the current price;
+  - `payment_cents` with its method when present.
+- **Formatting:** BRL with `Intl.NumberFormat('pt-BR')` from cents, through one pure `formatCents()` function.
+- **Interaction:**
+  - the profile selector (from `/api/demo-profiles`) appears only on `next_action=choose_profile`;
+  - the hand-off box shows the summary, the channel and a "Copiar resumo" button, and the text "Resumo preparado";
+  - sources sit behind a "Fontes" toggle;
+  - `aria-live="polite"` on the log;
+  - a typing indicator;
+  - on an error, the message and "Tentar novamente" re-send the same `request_id` and keep the draft;
+  - a 410 starts a new session and says so;
+  - a technical panel, collapsed, shows `trace` when present.
+- **Language:** all UI text is PT-BR.
+
+**✅ C8:**
+- Run locally with real Gemini: the Takamine → PIX flow.
+- Playwright screenshots at 320, 390 and 1280 px go to `docs/qa/screens/` (the S7 numbering starts here).
+- Visual review of each screenshot against the mockup and the guide §7 checklist.
+- In the DOM, the card's price text equals `formatCents(dto.offer_cents)`, i.e. "R$ 2.199,00", then "R$ 2.089,05".
+- The 320 px page has no horizontal scroll (`scrollWidth <= innerWidth`).
+
+**🐞 Expected trouble:**
+- A non-breaking space in the `Intl` output breaks string asserts → normalize ` ` in the tests only.
+- Fonts not loading → check the network panel and the `/static` MIME type.
+
+### S6b · `/admin` (≈1.5 h) [OFF + GEM] → C8b — D20
+**Does:**
+- **`app/metrics.py`:** a `TurnMetrics` collector, in memory and thread-safe, with `started_at`. It is fed in `main.py` after each successful turn, with `record(trace, cards, sources)`. It stores **only**:
+  - the cost (usage × the price for `settings.gemini_model`);
+  - a topic label;
+  - the product ids and names from cards.
+
+  It never stores the message, the text or the hand-off summary. Topic derivation is a pure function `topic_for(tools, sources, handoff)`:
+  - `get_my_order` → "Pedido";
+  - `prepare_handoff` → "Atendimento humano (<reason>)";
+  - `search_policy` with section X → "Política §X <title>";
+  - `quote_product` with pix → "Preço / PIX";
+  - other `quote_product` → "Preço / pagamento";
+  - `query_catalog` → "Busca no catálogo";
+  - no tool → "Sem consulta (conversa/fora de escopo)".
+- **Pricing:** shipped. `Dockerfile` adds `COPY evals/pricing.json`, `.gcloudignore` allows it, and `Settings.pricing_path` points to it. It stays one file; the model's price comes from it, and a missing price shows "custo indisponível", never 0.
+- **Routes:**
+  - `GET /admin` serves a static shell (`noindex`, no data) with a token field kept only in JS memory;
+  - `GET /admin/api/stats` requires `X-Admin-Token` (`hmac.compare_digest`) and returns 404 for a missing or wrong token, **and when `ADMIN_TOKEN` is unset**;
+  - the payload has turns, average cost per answer, total cost, topic counts (top 10), top 3 products, `since`, model and the price-source date.
+
+  This refines D20: a browser navigation cannot send a header, and a token in the URL would land in Cloud Run request logs, so the 404 guard sits on the data API. D20 gets an amendment line.
+- **Deploy prep:**
+  - generate a token locally (`secrets.token_urlsafe(32)`);
+  - write it to `.env` as `ADMIN_TOKEN`;
+  - create the secret `admin-token` via stdin; grant the accessor role to `emporio-agent-sa` only;
+  - verify by hash, never print the value.
+
+  It is deployed in S7.
+
+**✅ C8b:**
+- `tests/http/test_admin.py`, offline with the fake model:
+  - no token → 404; wrong token → 404; token unset → 404;
+  - with the right token, after 3 scripted turns, the average cost equals the hand-computed value from the fake usage;
+  - topics follow the tools;
+  - the top 3 follows the card counts (a 4th product with fewer cards is excluded);
+  - a sentinel string from the customer message does not appear in `repr(metrics.__dict__)` or in the JSON.
+- Mutations: a token check that always passes; the message stored in the collector; cost without thinking tokens; top 4 instead of 3. Each must be caught.
+
+### S7 · Testing & hardening, documented (≈3 h) [OFF + URL] → C9 — D21
+**Does:**
+- **Dependencies:** `playwright` pinned in `requirements-dev.txt`, using the browsers already cached.
+- **Fake model:** `FakeLLM`/`call`/`say` move from `tests/http/test_chat_api.py` to `tests/fakes.py`, imported by both suites. It is still labeled as a mock.
+- **E2E (`tests/e2e/`, offline):** a fixture starts uvicorn on a free port in a thread, with `create_app(settings, llm=FakeLLM(script))`. Two isolated browser contexts.
+  - Context 1: Takamine → PIX. Card prices equal the DTO; one avatar per turn.
+  - Context 2: order 8 as a visitor → selector → profile B → "não há pedido" → switch to A → the order data appears.
+  - Forced failures via the fake model: 503 and 504 show "Tentar novamente" and keep the draft, and the retry succeeds; 429; an empty catalog result; 410 after `DELETE /api/session`.
+  - Waits are on visible state only: no `networkidle`, no sleeps.
+- **Hardening** (TDD, a test and a mutation each):
+  - security-header middleware:
+    - `Content-Security-Policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`;
+    - `X-Content-Type-Options: nosniff`;
+    - `Referrer-Policy: no-referrer`;
+    - `Cache-Control: no-store` on `/api/*` and `/admin/api/*`;
+  - a request body limit of 16 KiB → 413 `payload_too_large`, checked on `Content-Length` and on the streamed body;
+  - unhandled exceptions → a generic 500 JSON without a stack trace (a test with a fake model that raises);
+  - `/admin` is not linked from `/` (a test greps the page);
+  - `/docs` and `/openapi.json` → 404;
+  - the cookie has `HttpOnly`, `SameSite=Lax`, and `Secure` behind https.
+- **Rate limit and daily cap:** exercised locally with low limits in the test settings, not in a hosted test revision (that would cost money for no added evidence; this is my call, recorded in the QA report).
+- **Deploy (authorized for this project in S4):**
+  - redeploy with `ADMIN_TOKEN=admin-token:1` added to `--set-secrets`;
+  - label it with the commit;
+  - then run on the URL: `/health`, milestone 1, `/admin/api/stats` without a token → 404, with the token → 200, and the headers present.
+- **QA report** in `docs/qa/README.md`: one row per case (id, steps, expected, observed, verdict, screenshot link).
+  - **Hosted customer flows**, from `scripts/qa_capture.py` with Playwright against the URL (real Gemini, about 15 turns ≈ US$ 0.03):
+    - discovery;
+    - Takamine → PIX;
+    - order (visitor → A → B);
+    - return;
+    - out of scope;
+    - hand-off;
+    - `/admin`.
+  - **Forced failures** come from the local app with the labeled fake model.
+  - Screenshots are named `docs/qa/screens/NN-scenario-viewport.png`, at 320, 390 and 1280 px.
+  - The report lists what was **not** verified.
+
+**✅ C9:**
+- `pytest` (unit + http + e2e) is all green, citing the literal line; expected about 97 + about 35 new tests;
+- `mutation_check.py` → all caught (30 + about 9 new);
+- the new revision label equals HEAD;
+- the hosted milestone 1 is 219900 → 208905;
+- the QA report has no blank verdict.
+
+**🐞 Expected trouble:**
+- CSP blocks the fonts or the JSON → read the console errors captured by Playwright.
+- The body limit breaks the TestClient → test with a raw `Content-Length`.
+
+### S8 · Capture, review, delivery (Tue 03/11, done by 20:00 SP) [URL] → C10
+1. **8.1 Capture.** `scripts/capture_examples.py` drives the hosted URL and writes 5 conversations to `examples/NN-*.md`:
+   - discovery (nylon up to R$ 800);
+   - promotion + PIX (Kalani);
+   - authorized order (A/8);
+   - return (online, with the delivery date);
+   - out of scope (amplifier + bass).
+
+   Each file has the PT-BR text with an English translation, model, revision, commit, `dataset_id`, tools, public ids, duration and a screenshot. Any blocker → fix the cause, redeploy and capture again.
+2. **8.2 Review.** `/qa-response` on each conversation, against the tool results and the manual sections, with no personal data. The verdicts go in `examples/README.md`.
+3. **8.3 Final README.** Setup, architecture summary, decisions (linking D1–D21), the cost summary (linking `evals/cost-model.md`), tests and QA, `/admin` (the token is not in the repo), and limitations:
+   - the model shutdown on 2027-05-07;
+   - the in-memory sessions and metrics;
+   - retrieval paraphrases at 4/6;
+   - the past estimate of order 8;
+   - §3 × §3.1.
+
+   Plus AI usage, the URL and the revision.
+
+   **Clean clone:** `git clone` into the scratchpad → venv → `import_snapshot.py --source <ZIP>` → `build_policy_index.py` → `pytest` → uvicorn → milestone 1 locally.
+4. **8.4 Delivery PDF.**
+   - The source `docs/delivery/report.html` is in English and committed.
+   - `scripts/build_pdf.py` uses Playwright `page.pdf()` to write `Breno Zamponi - AI Engineer – Full-Stack para Aplicações com IA Generativa.pdf`. It is git-ignored and handed to Breno.
+   - Sections: problem → solution → architecture → guardrails → evidence (tests, mutations, QA, examples) → **cost** (per answer, per type, monthly 500/2k/10k, Cloud Run, BRL) → limitations → links.
+   - Plus `docs/delivery/email-reply.md`, the text of the e-mail reply.
+
+**✅ C10:**
+- 5/5 conversations without a blocker;
+- `check_staged.py` PASS;
+- `git ls-remote` == HEAD == the Cloud Run label;
+- the last commit before 23:59 SP;
+- the PDF opens and has the cost numbers equal to `evals/cost-model.md`;
+- Breno uploads it to the form and replies to the e-mail.
 
 ## Risks
 

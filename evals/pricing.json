@@ -8,8 +8,49 @@
     "gemini-3.1-flash-lite shuts down on 2027-05-07; recommended replacement gemini-3.5-flash-lite."
   ],
   "models": {
-    "gemini-3.1-flash-lite": {"input_per_mtok": 0.25, "output_per_mtok": 1.50},
-    "gemini-3.5-flash-lite": {"input_per_mtok": 0.30, "output_per_mtok": 2.50},
-    "gemini-3.6-flash": {"input_per_mtok": 0.75, "output_per_mtok": 3.75}
+    "gemini-3.1-flash-lite": {
+      "input_per_mtok": 0.25,
+      "output_per_mtok": 1.5
+    },
+    "gemini-3.5-flash-lite": {
+      "input_per_mtok": 0.3,
+      "output_per_mtok": 2.5
+    },
+    "gemini-3.6-flash": {
+      "input_per_mtok": 0.75,
+      "output_per_mtok": 3.75
+    }
+  },
+  "cloud_run": {
+    "source": "https://cloud.google.com/run/pricing (region table 'Services (Request-based billing)', Sao Paulo (southamerica-east1) entry; read from the page HTML)",
+    "checked_on": "2026-10-31",
+    "region": "southamerica-east1",
+    "tier": "Tier 2",
+    "billing": "request-based (CPU only during requests; the service has no cpu-throttling override)",
+    "vcpu_second_usd": 3.36e-05,
+    "gib_second_usd": 3.5e-06,
+    "requests_per_million_usd": 0.4,
+    "free_tier_monthly": {
+      "vcpu_seconds": 180000,
+      "gib_seconds": 360000,
+      "requests": 2000000,
+      "note": "per billing account, shared with every project on it, applied as a spending discount at Tier 1 prices",
+      "tier1_vcpu_second_usd": 2.4e-05,
+      "tier1_gib_second_usd": 2.5e-06
+    },
+    "service_shape": {
+      "vcpu": 1,
+      "memory_gib": 0.5,
+      "concurrency": 20,
+      "min_instances": 0,
+      "max_instances": 1,
+      "measured": "gcloud run services describe on 2026-10-31: limits cpu=1, memory=512Mi, containerConcurrency=20"
+    }
+  },
+  "fx": {
+    "usd_brl": 5.4212,
+    "kind": "PTAX selling rate",
+    "date": "2026-10-30",
+    "source": "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo (Banco Central do Brasil, last business day before 2026-10-31)"
   }
 }
