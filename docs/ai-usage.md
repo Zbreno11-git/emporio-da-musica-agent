@@ -34,3 +34,16 @@
   - translated the repository to English.
 - **What I decided:** the deadline, the benchmark candidates, the budget, the delivery blockers, keeping the current Gemini key, the language scope (English repository, Portuguese customer-facing agent) and the delivery format.
 - **How I verified:** `pytest` (62 passed), `scripts/mutation_check.py` (15/15 caught) and `scripts/check_staged.py` before each commit.
+
+### 2026-10-31 · S2–S8: agent, deploy, benchmark, UI, QA, security and delivery (Claude Code)
+
+- **What Claude Code did:**
+  - built the Gemini tool loop, the order and manual tools, the hand-off and the server-side text checks, test-first, with a scripted fake model for every test (labeled as a mock);
+  - deployed the demo to Cloud Run in the dedicated project, after my authorization, and verified each revision on the URL;
+  - ran the model cost-benefit benchmark and built the measured cost model from its turns;
+  - built the Ressonância interface and `/admin`, then the browser tests, the hardening and the QA report with screenshots;
+  - reviewed real answers and turned each invented fact it found (a non-existent bass model, false "we don't have it", sound qualities not in the data, a fake price or discount accepted from an injected message, a false absence under attack) into a server check, each with a test and a mutation;
+  - wrote and ran the red-team battery, and captured and reviewed the five delivery conversations.
+- **What I decided:** the scope and the order of the sessions; the budget and every deploy; the model candidates; the `/admin` content and its privacy rule; the testing and hardening session; that invented products, numbers or hallucination must be avoided "a todo custo"; that the agent must be defended against prompt injection and other LLM attacks; the delivery format.
+- **ChatGPT:** used before implementation for brainstorming and to write the vision, backend and branding specs (guides 01–03) that the implementation followed.
+- **How I verified:** `pytest` (200 passed), `scripts/mutation_check.py` (78/78 mutations caught), `scripts/check_staged.py` before every commit, the hosted QA run (13/13 hosted cases passed), the red-team battery (0 blockers) and the reviewed conversations in `examples/`. Claude Code's own mistakes and their antidotes are in [`ERRORS.md`](ERRORS.md).

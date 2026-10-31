@@ -34,6 +34,7 @@ The importer now enforces all of these on every build (`tests/domain/test_import
 | A9 | `orders` | Only order 8 is `shipped`. Its estimated delivery (2026-02-28) is already in the past relative to today (2026-10-31). The 8 tracking codes follow the §5.3 format | Present the date as the estimate recorded in the snapshot, without asserting the current delivery state |
 | A10 | `customers` | One e-mail is shared by two customers. Empty optional fields in `orders`: `tracking_code` (12), `estimated_delivery` (12), `notes` (16) | E-mail does not identify a customer. Empty fields become `null` |
 | A11 | Products 96, 130, 136 | 96 is active with stock 0; 130 is `coming_soon` with 2 units; 136 is `discontinued` with 13 units | None is shown as available; each state is stated in words |
+| A12 | `products.description` × name and specs (found in the S8 capture review, 2026-10-31) | 6 of 65 descriptions name another brand than the product: 135 (Music Man, "Fender Jazz Bass"), 137 (Yamaha, "Ibanez"), 139 (Yamaha, "Pearl"), 140 (Pearl, "Tama"), 142 (Korg, "Roland"), 144 (Roland, "Yamaha"). Product 137's description also says "5 cordas" while its specs say 4 | The card is built from the name and the specs; the text checks accept description words as evidence, so the agent may repeat the source's contradiction. Listed as a README limitation; the store should fix the descriptions |
 
 ## Discrepancies between supporting materials
 
